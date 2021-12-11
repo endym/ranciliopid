@@ -1793,6 +1793,7 @@ void setup() {
     if (WiFi.status() == WL_CONNECTED)
     {
       debugStream.writeI("WiFi connected - IP = %i.%i.%i.%i",WiFi.localIP()[0],WiFi.localIP()[1],WiFi.localIP()[2],WiFi.localIP()[3]);
+      #if 0
       debugStream.writeI("Wifi works, now try Blynk (timeout 30s)");
       if (fallback == 0) {
         #if DISPLAY != 0
@@ -1881,6 +1882,7 @@ void setup() {
           EEPROM.get(130, brewboarder);
         } 
       }
+      #endif
     }
     else 
     { 
@@ -2098,6 +2100,7 @@ void looppid()
       #endif
     });
 
+    #if 0
     if (Blynk.connected()) 
     {  // If connected run as normal
       Blynk.run();
@@ -2106,6 +2109,7 @@ void looppid()
     {
       checkBlynk();
     }
+    #endif
     wifiReconnects = 0;   //reset wifi reconnects if connected
   } else 
   {
