@@ -66,6 +66,20 @@ enum MACHINE {
 #define ETRIGGERTIME 600            // seconds, time between trigger signal
 #define TRIGGERRELAYTYPE HIGH      // LOW = low trigger, HIGH = high trigger relay for E-Trigger
 
+// Display Menu
+#define DISPLAY_MENU 0             // 0 = no display buttons, 1 = two display buttons
+#define DISPLAY_BTN_LEFT_PIN_NO 15 // input pin for left display button (CONFLICT WITH BREWDETECTION = 3)
+#define DISPLAY_BTN_LEFT_PIN_MODE INPUT // external pulldown resistor
+#define DISPLAY_BTN_LEFT_PIN_ACTIVE_LEVEL HIGH
+#define DISPLAY_BTN_RIGHT_PIN_NO 16 // input pin for right display button (CONFLICT WITH ETRIGGER == 1)
+#define DISPLAY_BTN_RIGHT_PIN_MODE INPUT_PULLDOWN_16 // pin 16 only supports pull-down
+#define DISPLAY_BTN_RIGHT_PIN_ACTIVE_LEVEL HIGH
+#if (DISPLAY_MENU != 0)
+#define DISPLAY_BTN_TEST_MODE 0    // 1 = disable PID
+#else
+#define DISPLAY_BTN_TEST_MODE 0
+#endif
+
 //Weight SCALE
 #define WEIGHTSETPOINT 30          // Gramm 
 

@@ -25,6 +25,11 @@
 #include <PubSubClient.h>
 #include "TSIC.h"       //Library for TSIC temp sensor
 #include <Adafruit_VL53L0X.h> //for TOF 
+#include "rancilio-pid.h"
+
+#if (DISPLAY_MENU != 0)
+#include "DisplayMenu.h"
+#endif
 
 #if (BREWMODE == 2 || ONLYPIDSCALE == 1)
 #include <HX711_ADC.h>
@@ -179,6 +184,40 @@ unsigned long previousMillisPressure;  // initialisation at the end of init()
 
 
 /********************************************************
+   System Parameter Definition
+******************************************************/
+// object for all constant values
+typedef struct
+{
+  double min;                                                                   // min. value
+  double max;                                                                   // max. value
+  double def;                                                                   // default value
+  const char mqttName[15];                                                      // MQTT name
+}sys_param_def_t;
+
+// definition of non-volatile (constant) system parameter values
+static const sys_param_def_t sysParamInfo[SYS_PARAM__LAST_ENUM] =
+{
+// MUST BE SAME SEQUENCE AS in sys_param_type_t!
+//  min,   max,   default,       MQTT name
+  {  89.0,  99.0, SETPOINT,      "BrewSetPoint" },                              // SYS_PARAM_BREW_SETPOINT
+  { 100.0, 125.0, STEAMSETPOINT, "SteamSetPoint" },                             // SYS_PARAM_STEAM_SETPOINT
+  {   0.0, 100.0, STARTKP,       "" },                                          // SYS_PARAM_PID_KP_START
+  {   0.0, 100.0, STARTTN,       "" },                                          // SYS_PARAM_PID_TN_START
+  {   0.0, 100.0, 0.0,           "" },                                          // SYS_PARAM_PID_TV_START
+  {   0.0, 100.0, AGGKP,         "" },                                          // SYS_PARAM_PID_KP_REGULAR
+  {   0.0, 100.0, AGGTN,         "" },                                          // SYS_PARAM_PID_TN_REGULAR
+  {   0.0, 100.0, AGGTV,         "" },                                          // SYS_PARAM_PID_TV_REGULAR
+  {   0.0, 100.0, AGGBKP,        "" },                                          // SYS_PARAM_PID_KP_BD
+  {   0.0, 100.0, AGGBTN,        "" },                                          // SYS_PARAM_PID_TN_BD
+  {   0.0, 100.0, AGGBTV,        "" },                                          // SYS_PARAM_PID_TV_BD
+};
+
+// array with current value of system parameters
+static double sysParam[SYS_PARAM__LAST_ENUM] = { 0 };
+
+
+/********************************************************
    declarations
 ******************************************************/
 int pidON = 1 ;                 // 1 = control loop in closed loop
@@ -215,9 +254,9 @@ int firstreading = 1 ;          // Ini of the field, also used for sensor check
 /********************************************************
    PID - values for offline brewdetection
 *****************************************************/
-double aggbKp = AGGBKP;
-double aggbTn = AGGBTN;
-double aggbTv = AGGBTV;
+double aggbKp = sysParamInfo[SYS_PARAM_PID_KP_BD].def;
+double aggbTn = sysParamInfo[SYS_PARAM_PID_TN_BD].def;
+double aggbTv = sysParamInfo[SYS_PARAM_PID_TV_BD].def;
 #if aggbTn == 0
 double aggbKi = 0;
 #else
@@ -256,16 +295,16 @@ double Input, Output;
 double setPointTemp;
 double previousInput = 0;
 
-double BrewSetPoint = SETPOINT;
+double BrewSetPoint = sysParamInfo[SYS_PARAM_BREW_SETPOINT].def;
 double setPoint = BrewSetPoint;
-double SteamSetPoint = STEAMSETPOINT;
+double SteamSetPoint = sysParamInfo[SYS_PARAM_STEAM_SETPOINT].def;
 int    SteamON = 0;
 int    SteamFirstON = 0;
-double aggKp = AGGKP;
-double aggTn = AGGTN;
-double aggTv = AGGTV;
-double startKp = STARTKP;
-double startTn = STARTTN;
+double aggKp = sysParamInfo[SYS_PARAM_PID_KP_REGULAR].def;
+double aggTn = sysParamInfo[SYS_PARAM_PID_TN_REGULAR].def;
+double aggTv = sysParamInfo[SYS_PARAM_PID_TV_REGULAR].def;
+double startKp = sysParamInfo[SYS_PARAM_PID_KP_START].def;
+double startTn = sysParamInfo[SYS_PARAM_PID_TN_START].def;
 #if startTn == 0
 double startKi = 0;
 #else
@@ -375,6 +414,11 @@ const unsigned long intervalDisplay = 500;
 #endif
 
 
+/********************************************************
+   Display Menu
+******************************************************/
+static bool isDisplayMenuActive = false;
+
 
 /********************************************************
    BLYNK define pins and read values
@@ -398,8 +442,7 @@ BLYNK_WRITE(V6) {
 }
 
 BLYNK_WRITE(V7) {
-  BrewSetPoint = param.asDouble();
-  mqtt_publish("BrewSetPoint", number2string(BrewSetPoint));
+  setSysParam(SYS_PARAM_BREW_SETPOINT, param.asDouble());
 }
 
 BLYNK_WRITE(V8) {
@@ -435,8 +478,7 @@ BLYNK_WRITE(V15)
   mqtt_publish("SteamON", number2string(SteamON));
 }
 BLYNK_WRITE(V16) {
-  SteamSetPoint = param.asDouble();
-  mqtt_publish("SteamSetPoint", number2string(SteamSetPoint));
+  setSysParam(SYS_PARAM_STEAM_SETPOINT, param.asDouble());
 }
 #if (BREWMODE == 2)
 BLYNK_WRITE(V18)
@@ -1651,6 +1693,10 @@ void setup() {
   DEBUGSTART(115200);
   debugStream.setup();
 
+  // init current value of system parameters with default value...
+  for (int paramType=0; paramType<SYS_PARAM__LAST_ENUM; paramType++)
+    sysParam[paramType] = sysParamInfo[paramType].def;
+  
   if (MQTT == 1) {
     //MQTT
     snprintf(topic_will, sizeof(topic_will), "%s%s/%s", mqtt_topic_prefix, hostname, "will");
@@ -1908,7 +1954,11 @@ void setup() {
   //setPointTemp = BrewSetPoint;
   bPID.SetSampleTime(windowSize);
   bPID.SetOutputLimits(0, windowSize);
+  #if (DISPLAY_BTN_TEST_MODE == 0)
   bPID.SetMode(AUTOMATIC);
+  #else
+  bPID.SetMode(MANUAL);
+  #endif
 
 
   /********************************************************
@@ -2001,6 +2051,10 @@ void setup() {
     timerAlarmWrite(timer, 10000, true);//m
     timerAlarmEnable(timer);//m
   #endif
+
+  #if (DISPLAY_MENU != 0) && (ETRIGGER == 0) && (BREWDETECTION <= 2)
+  displaymenuSetup();
+  #endif
 }
 
 void loop() {
@@ -2008,6 +2062,9 @@ void loop() {
       loopcalibrate();
   } else {
       looppid();
+      #if (DISPLAY_MENU != 0)
+      isDisplayMenuActive = displaymenuIsEnableEvent();
+      #endif
       debugStream.handle();
       debugVerboseOutput();
     }
@@ -2154,19 +2211,28 @@ void looppid()
   // OFFLINE
   //voids Display & BD
   #if DISPLAY != 0
-      unsigned long currentMillisDisplay = millis();
-      if (currentMillisDisplay - previousMillisDisplay >= 100) 
-      {
-        displayShottimer() ;
-      }
-      if (currentMillisDisplay - previousMillisDisplay >= intervalDisplay)
-      {
-        previousMillisDisplay = currentMillisDisplay;
-        #if DISPLAYTEMPLATE < 20 // not in vertikal template
-          Displaymachinestate() ;
-        #endif
-        printScreen();  // refresh display
-      }
+  if (!isDisplayMenuActive)
+  {
+    unsigned long currentMillisDisplay = millis();
+    if (currentMillisDisplay - previousMillisDisplay >= 100) 
+    {
+      displayShottimer() ;
+    }
+    if (currentMillisDisplay - previousMillisDisplay >= intervalDisplay)
+    {
+      previousMillisDisplay = currentMillisDisplay;
+      #if DISPLAYTEMPLATE < 20 // not in vertikal template
+      Displaymachinestate();
+      #endif
+      printScreen();  // refresh display
+    }
+  }
+  #if (DISPLAY_MENU != 0)
+  else
+  {
+    displaymenuLoop();
+  }
+  #endif
   #endif
   if (machinestate == kPidOffline || machinestate == kSensorError || machinestate == kEmergencyStop) // Offline see machinestate.h
   {
@@ -2285,3 +2351,102 @@ void looppid()
   }  
   //sensor error OR Emergency Stop
 }
+
+
+/**************************************************************************//**
+ * \brief Returns the firmware version.
+ * 
+ * \return firmware version string
+ ******************************************************************************/
+const char *getFwVersion(void)
+{
+  return sysVersion;
+}
+
+
+/**************************************************************************//**
+ * \brief Returns information of given system parameter type.
+ * 
+ * \param paramType - parameter type
+ * \param paramObj  - buffer for parameter values
+ * 
+ * \return  0 - succeed
+ *         <0 - failed
+ ******************************************************************************/
+int getSysParam(sys_param_type_t paramType, sys_param_t *paramObj)
+{
+  // sanity check...
+  if ((paramType >= SYS_PARAM__LAST_ENUM) || !paramObj)
+  {
+    debugStream.writeE("%s(): invalid param type %i or object %p!", __FUNCTION__, paramType, paramObj);
+    return -1;
+  }
+
+  // fill given object...
+  paramObj->cur = sysParam[paramType];
+  paramObj->min = sysParamInfo[paramType].min;
+  paramObj->max = sysParamInfo[paramType].max;
+  paramObj->def = sysParamInfo[paramType].def;
+  paramObj->mqttName = sysParamInfo[paramType].mqttName;
+
+  return 0;
+}
+
+
+
+/**************************************************************************//**
+ * \brief Sets the current value of given system parameter type.
+ * 
+ * \param paramType    - parameter type
+ * \param currentValue - value to set as current parameter value
+ * 
+ * \return  0 - succeed
+ *         <0 - failed
+ ******************************************************************************/
+int setSysParam(sys_param_type_t paramType, double currentValue)
+{
+  // sanity check...
+  if (paramType >= SYS_PARAM__LAST_ENUM)
+  {
+    debugStream.writeE("%s(): invalid param type %i!", __FUNCTION__, paramType);
+    return -1;
+  }
+
+  // check value range...
+  if ((currentValue < sysParamInfo[paramType].min) ||
+      (currentValue > sysParamInfo[paramType].max))
+  {
+    debugStream.writeW("%s(): invalid value %f for type %i!", __FUNCTION__, currentValue, paramType);
+    return -2;
+  }
+
+  // set current value
+  sysParam[paramType] = currentValue;
+
+  // send MQTT message if a name is defined
+  if (strlen(sysParamInfo[paramType].mqttName) > 0)
+    mqtt_publish(sysParamInfo[paramType].mqttName, number2string(currentValue));
+
+  //////////////////////////////////////////////////////////////////////////////
+  // This is for compatibility to current source code structure only!
+  // The needed refactoring would touch a lot of lines which would lead to merge conflicts.
+  switch (paramType)
+  {
+    case SYS_PARAM_BREW_SETPOINT:
+      BrewSetPoint = currentValue;
+      if (SteamON == 0)
+        setPoint = currentValue;
+      break;
+    case SYS_PARAM_STEAM_SETPOINT:
+      SteamSetPoint = currentValue;
+      if (SteamON == 1)
+        setPoint = currentValue;
+      break;
+    default:
+      break;
+  }
+  //////////////////////////////////////////////////////////////////////////////
+  
+  return 0;
+}
+
