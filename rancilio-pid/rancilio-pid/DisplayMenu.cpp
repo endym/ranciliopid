@@ -28,7 +28,7 @@
 // menu settings...
 #define LCDML_DISP_COLS           DISPLAY_COLS_MAX
 #define LCDML_DISP_ROWS           DISPLAY_ROWS_MAX
-#define LCDML_SCROLLBAR_WIDTH     (DISPLAY_FONT_WIDTH-1)                        // scrollbar width 
+#define LCDML_SCROLLBAR_WIDTH     3                                             // scrollbar width 
 #define LCDML_TEXT_INDENTING      (DISPLAY_FONT_WIDTH+2)
 
 
@@ -69,6 +69,14 @@ static void cbMenuInformation(uint8_t param);
 // static void mFunc_para(uint8_t param);
 static void cbMenuDynParaBrewSetPoint(uint8_t line);
 static void cbMenuDynParaSteamSetPoint(uint8_t line);
+static void cbMenuDynParaPidKpStart(uint8_t line);
+static void cbMenuDynParaPidTnStart(uint8_t line);
+static void cbMenuDynParaPidKp(uint8_t line);
+static void cbMenuDynParaPidTn(uint8_t line);
+static void cbMenuDynParaPidTv(uint8_t line);
+static void cbMenuDynParaPidKpBd(uint8_t line);
+static void cbMenuDynParaPidTnBd(uint8_t line);
+static void cbMenuDynParaPidTvBd(uint8_t line);
 
 
 
@@ -98,17 +106,29 @@ LCDMenuLib2_menu LCDML_0 (255, 0, 0, NULL, NULL); // root menu element (do not c
 LCDMenuLib2 LCDML(LCDML_0, LCDML_DISP_ROWS, LCDML_DISP_COLS, lcdml_menu_display, lcdml_menu_clear, lcdml_menu_control);
 
 // LCDML_add      (id, prev_layer, new_num, lang_char_array, callback_function)
-LCDML_add         (0, LCDML_0,   1, "Information", cbMenuInformation);
+LCDML_add         (0,  LCDML_0,       1, "Information", cbMenuInformation);
 // LCDMenuLib_addAdvanced(id, prev_layer, new_num, condition, lang_char_array, callback_function, parameter (0-255), menu function type  )
-LCDML_addAdvanced (1, LCDML_0,   2, NULL,   "Settings", NULL,                       0, _LCDML_TYPE_default);
-LCDML_addAdvanced (2, LCDML_0_2, 1, NULL,   "",         cbMenuDynParaBrewSetPoint,  0, _LCDML_TYPE_dynParam);
-LCDML_addAdvanced (3, LCDML_0_2, 2, NULL,   "",         cbMenuDynParaSteamSetPoint, 0, _LCDML_TYPE_dynParam);
-LCDML_add         (4, LCDML_0_2, 3, "Back", cbMenuBack);
-LCDML_add         (5, LCDML_0,   3, "Exit", cbMenuExit);
+LCDML_addAdvanced (1,  LCDML_0,       2, NULL,   "Settings"    , NULL,                       0, _LCDML_TYPE_default);
+LCDML_addAdvanced (2,  LCDML_0_2,     1, NULL,   "Temperatures", NULL,                       0, _LCDML_TYPE_default);
+LCDML_addAdvanced (3,  LCDML_0_2_1,   1, NULL,   "",             cbMenuDynParaBrewSetPoint,  0, _LCDML_TYPE_dynParam);
+LCDML_addAdvanced (4,  LCDML_0_2_1,   2, NULL,   "",             cbMenuDynParaSteamSetPoint, 0, _LCDML_TYPE_dynParam);
+LCDML_add         (5,  LCDML_0_2_1,   3, "Back", cbMenuBack);
+LCDML_addAdvanced (6,  LCDML_0_2,     2, NULL,   "PID",          NULL,                       0, _LCDML_TYPE_default);
+LCDML_addAdvanced (7,  LCDML_0_2_2,   1, NULL,   "",             cbMenuDynParaPidKpStart,    0, _LCDML_TYPE_dynParam);
+LCDML_addAdvanced (8,  LCDML_0_2_2,   2, NULL,   "",             cbMenuDynParaPidTnStart,    0, _LCDML_TYPE_dynParam);
+LCDML_addAdvanced (9,  LCDML_0_2_2,   3, NULL,   "",             cbMenuDynParaPidKp,         0, _LCDML_TYPE_dynParam);
+LCDML_addAdvanced (10, LCDML_0_2_2,   4, NULL,   "",             cbMenuDynParaPidTn,         0, _LCDML_TYPE_dynParam);
+LCDML_addAdvanced (11, LCDML_0_2_2,   5, NULL,   "",             cbMenuDynParaPidTv,         0, _LCDML_TYPE_dynParam);
+LCDML_addAdvanced (12, LCDML_0_2_2,   6, NULL,   "",             cbMenuDynParaPidKpBd,       0, _LCDML_TYPE_dynParam);
+LCDML_addAdvanced (13, LCDML_0_2_2,   7, NULL,   "",             cbMenuDynParaPidTnBd,       0, _LCDML_TYPE_dynParam);
+LCDML_addAdvanced (14, LCDML_0_2_2,   8, NULL,   "",             cbMenuDynParaPidTvBd,       0, _LCDML_TYPE_dynParam);
+LCDML_add         (15, LCDML_0_2_2,   9, "Back", cbMenuBack);
+LCDML_add         (16, LCDML_0_2,     3, "Back", cbMenuBack);
+LCDML_add         (17, LCDML_0,       3, "Exit", cbMenuExit);
 
 // menu element count - last element id
 // this value must be the same as the last menu element
-#define _LCDML_DISP_cnt    5
+#define _LCDML_DISP_cnt    17
 // create menu
 LCDML_createMenu(_LCDML_DISP_cnt);
 
@@ -183,13 +203,6 @@ static void lcdml_menu_clear(void)
 static void lcdml_menu_display(void)
 /* ******************************************************************** */
 {
-  u8g2.setFont(DISPLAY_FONT); // set font
-
-  // clear lcd
-  u8g2.clearBuffer();
-  
-  // declaration of some variables
-  // ***************
   // content variable
   char content_text[LCDML_DISP_COLS];  // save the content text of every menu element
   // menu element object
@@ -198,23 +211,16 @@ static void lcdml_menu_display(void)
   uint8_t i = LCDML.MENU_getScroll();
   uint8_t maxi = LCDML_DISP_ROWS + i;
   uint8_t n = 0;
-
-   // init vars
+  // scrollbar
   uint8_t n_max             = (LCDML.MENU_getChilds() >= LCDML_DISP_ROWS) ? LCDML_DISP_ROWS : (LCDML.MENU_getChilds());
-
-  uint8_t scrollbar_min     = 0;
   uint8_t scrollbar_max     = LCDML.MENU_getChilds();
   uint8_t scrollbar_cur_pos = LCDML.MENU_getCursorPosAbs();
-  uint8_t scroll_pos        = ((1.*n_max * LCDML_DISP_ROWS) / (scrollbar_max - 1) * scrollbar_cur_pos);
+  // uint8_t scroll_pos        = ((1.*n_max * LCDML_DISP_ROWS) / (scrollbar_max - 1) * scrollbar_cur_pos);
 
-
+  u8g2.setFont(DISPLAY_FONT);                                                   // set font
+  u8g2.clearBuffer();                                                           // clear lcd
   n = 0;
   i = LCDML.MENU_getScroll();
-  // update content
-  // ***************
-
-    // clear menu
-    // ***************
 
   // check if this element has children
   if ((tmp = LCDML.MENU_getDisplayedObj()) != NULL)
@@ -251,37 +257,33 @@ static void lcdml_menu_display(void)
   u8g2.setCursor(0, DISPLAY_FONT_HEIGHT * (LCDML.MENU_getCursorPos()));
   u8g2.println(">");
 
-  // ***** todo *****
-  #ifdef _SCROLLBAR_TODO_
-  if(_LCDML_DISP_draw_frame == 1) {
-     u8g2.drawFrame(_LCDML_DISP_box_x0, _LCDML_DISP_box_y0, (_LCDML_DISP_box_x1-_LCDML_DISP_box_x0), (_LCDML_DISP_box_y1-_LCDML_DISP_box_y0));
-  }
-
-  
   // display scrollbar when more content as rows available and with > 2
-  
-  if (scrollbar_max > n_max && _LCDML_DISP_scrollbar_w > 2)
+  if (scrollbar_max > n_max && LCDML_SCROLLBAR_WIDTH > 2)
   {
     // set frame for scrollbar
-    //u8g2.drawFrame(_LCDML_DISP_box_x1 - _LCDML_DISP_scrollbar_w, _LCDML_DISP_box_y0, _LCDML_DISP_scrollbar_w, _LCDML_DISP_box_y1-_LCDML_DISP_box_y0);
-    u8g2.drawRect(DISPLAY_WIDTH - LCDML_SCROLLBAR_WIDTH, 0,LCDML_SCROLLBAR_WIDTH,DISPLAY_HEIGHT, _LCDML_ADAFRUIT_TEXT_COLOR); 
-
+    u8g2.drawFrame(DISPLAY_WIDTH - LCDML_SCROLLBAR_WIDTH, 0, LCDML_SCROLLBAR_WIDTH, DISPLAY_HEIGHT-0);
     // calculate scrollbar length
     uint8_t scrollbar_block_length = scrollbar_max - n_max;
-    scrollbar_block_length = (_LCDML_DISP_box_y1-_LCDML_DISP_box_y0) / (scrollbar_block_length + LCDML_DISP_ROWS);
-
-    //set scrollbar
-    if (scrollbar_cur_pos == 0) {                                   // top position     (min)
-      u8g2.drawBox(_LCDML_DISP_box_x1 - (_LCDML_DISP_scrollbar_w-1), _LCDML_DISP_box_y0 + 1                                                     , (_LCDML_DISP_scrollbar_w-2)  , scrollbar_block_length);
+    scrollbar_block_length = (DISPLAY_HEIGHT-0) / (scrollbar_block_length + LCDML_DISP_ROWS);
+    // set scrollbar
+    if (scrollbar_cur_pos == 0)
+    {                                                                           // top position     (min)
+      u8g2.drawBox(DISPLAY_WIDTH - (LCDML_SCROLLBAR_WIDTH-1), 0+1,
+                   (LCDML_SCROLLBAR_WIDTH-2), scrollbar_block_length);
     }
-    else if (scrollbar_cur_pos == (scrollbar_max-1)) {            // bottom position  (max)
-      u8g2.drawBox(_LCDML_DISP_box_x1 - (_LCDML_DISP_scrollbar_w-1), _LCDML_DISP_box_y1 - scrollbar_block_length                                , (_LCDML_DISP_scrollbar_w-2)  , scrollbar_block_length);
+    else if (scrollbar_cur_pos == (scrollbar_max-1))
+    {                                                                           // bottom position  (max)
+      u8g2.drawBox(DISPLAY_WIDTH - (LCDML_SCROLLBAR_WIDTH-1),
+                   DISPLAY_HEIGHT - scrollbar_block_length,
+                   (LCDML_SCROLLBAR_WIDTH-2), scrollbar_block_length);
     }
-    else {                                                                // between top and bottom
-      u8g2.drawBox(_LCDML_DISP_box_x1 - (_LCDML_DISP_scrollbar_w-1), _LCDML_DISP_box_y0 + (scrollbar_block_length * scrollbar_cur_pos + 1),(_LCDML_DISP_scrollbar_w-2)  , scrollbar_block_length);
+    else
+    {                                                                           // between top and bottom
+      u8g2.drawBox(DISPLAY_WIDTH - (LCDML_SCROLLBAR_WIDTH-1),
+                   0 + (scrollbar_block_length * scrollbar_cur_pos + 1),
+                   (LCDML_SCROLLBAR_WIDTH-2), scrollbar_block_length);
     }
   }
-  #endif
 
   u8g2.sendBuffer();
 }
@@ -434,77 +436,68 @@ static void mFunc_para(uint8_t param)
 /**************************************************************************//**
  * \brief Handles the dynamic menu parameter.
  * 
+ * \param line        - screen line of this parameter
  * \param paramType   - system parameter type
  * \param sysParamObj - system parameter object
- * \param line        - screen line of this parameter
+ * \param stepSize    - value to dec/add per change
  ******************************************************************************/
-static void handleDynPara(sys_param_type_t paramType, sys_param_t *sysParamObj, uint8_t line)
+static void handleDynPara(uint8_t line, sys_param_type_t paramType, sys_param_t *sysParamObj, double stepSize)
 {
   uint8_t curLine = LCDML.MENU_getCursorPos();
   
   debugStream.writeI("%s(): param %i at line %u", __FUNCTION__, paramType, line);
   
+  // read current parameter value...
   if (getSysParam(paramType, sysParamObj) != 0)
   {
     debugStream.writeE("%s(): failed to get param %i!", __FUNCTION__, paramType);
     return;
   }
   
-  #if 0
-  if (!dynMenuParam4EditMode.isEditMode)                                                 // not edit mode?
+  // make only an action when the cursor stands on this menu item
+  if (line == curLine)                                                          // cursor at this line?
   {                                                                             // yes...
-    if (getSysParam(paramType, &dynMenuParam4EditMode.sysParam) != 0)
-    {
-      debugStream.writeE("%s(): failed to get param %i!", __FUNCTION__, paramType);
-      return;
-    }
-  }
-  #endif
-
-  // check if this function is active (cursor stands on this line)
-  if (line == curLine)
-  {
-    // make only an action when the cursor stands on this menu item
-    //check Button
-    if (LCDML.BT_checkAny())
-    {
-      if (LCDML.BT_checkEnter())
-      {
-        // this function checks returns the scroll disable status (0 = menu scrolling enabled, 1 = menu scrolling disabled)
-        if (LCDML.MENU_getScrollDisableStatus() == 0)
-        {
-          // disable the menu scroll function to catch the cursor on this point
-          // now it is possible to work with BT_checkUp and BT_checkDown in this function
-          // this function can only be called in a menu, not in a menu function
+    if (LCDML.BT_checkAny())                                                    // any button pressed?
+    {                                                                           // yes...
+      if (LCDML.BT_checkEnter())                                                // button event "enter"?
+      {                                                                         // yes, switch between scroll/edit mode...
+        // When enter the edit mode the button event "pressed" should change the
+        // paramter value instead of jump to prev/next menu item. Therefore the
+        // menu scroll function must be disabled.
+        // Leaving the edit mode will re-eanble the normal button behaviour.
+        if (LCDML.MENU_getScrollDisableStatus() == 0)                           // menu scrolling enabled?
+        {                                                                       // yes, enter edit mode...
+          // After disable of menu scroll function it is possible to work with
+          // BT_checkUp and BT_checkDown in this function.
+          // This function can only be called in a menu, not in a menu function.
           LCDML.MENU_disScroll();
-          dynMenuParam4EditMode.sysParam = *sysParamObj;
+          dynMenuParam4EditMode.sysParam = *sysParamObj;                        // create copy of current parameter value
           dynMenuParam4EditMode.isEditMode = true;
         }
         else
-        {
-          // enable the normal menu scroll function
-          LCDML.MENU_enScroll();
-          setSysParam(paramType, dynMenuParam4EditMode.sysParam.cur);
-          *sysParamObj = dynMenuParam4EditMode.sysParam;
+        {                                                                       // no, leave edit mode...
+          LCDML.MENU_enScroll();                                                // re-enable the normal menu scroll function
+          setSysParam(paramType, dynMenuParam4EditMode.sysParam.cur);           // set edit value as new current value
+          *sysParamObj = dynMenuParam4EditMode.sysParam;                        // update callers parameter object
           dynMenuParam4EditMode.isEditMode = false;
         }
       }
 
-      // This check have only an effect when MENU_disScroll is set
+      // Following button check have only an effect when menu scrolling is disabled
       if (LCDML.BT_checkUp())
       {
         if (dynMenuParam4EditMode.sysParam.cur > dynMenuParam4EditMode.sysParam.min)
-          dynMenuParam4EditMode.sysParam.cur -= 0.5;
+          dynMenuParam4EditMode.sysParam.cur -= stepSize;
         else
           dynMenuParam4EditMode.sysParam.cur = dynMenuParam4EditMode.sysParam.max;
         *sysParamObj = dynMenuParam4EditMode.sysParam;
       }
 
-      // This check have only an effect when MENU_disScroll is set
+      // Following button check have only an effect when menu scrolling is disabled
       if (LCDML.BT_checkDown())
       {
         if (dynMenuParam4EditMode.sysParam.cur < dynMenuParam4EditMode.sysParam.max)
-          dynMenuParam4EditMode.sysParam.cur += 0.5;
+          dynMenuParam4EditMode.sysParam.cur += stepSize;
         else
           dynMenuParam4EditMode.sysParam.cur = dynMenuParam4EditMode.sysParam.min;
         *sysParamObj = dynMenuParam4EditMode.sysParam;
@@ -512,7 +505,8 @@ static void handleDynPara(sys_param_type_t paramType, sys_param_t *sysParamObj, 
     }
   }
 
-  if (dynMenuParam4EditMode.isEditMode && (line == curLine))                    // edit mode and edit line?
+  // clear current menu line, before writing current updated value...
+  if (dynMenuParam4EditMode.isEditMode && (line == curLine))                    // edit mode and cursor at edit line?
   {                                                                             // yes, invert line background...
     // clear line with inverted color...
     u8g2.setDrawColor(1);
@@ -550,8 +544,8 @@ static void cbMenuDynParaBrewSetPoint(uint8_t line)
   static sys_param_t sysParam;
   char lineText[LCDML_DISP_COLS+1];
 
-  handleDynPara(SYS_PARAM_BREW_SETPOINT, &sysParam, line);
-  snprintf(lineText, sizeof(lineText), "Brew Temp:   %3.1f", sysParam.cur);
+  handleDynPara(line, SYS_PARAM_BREW_SETPOINT, &sysParam, 0.5);
+  snprintf(lineText, sizeof(lineText), "Brew Temp.  %5.1f", sysParam.cur);
   u8g2.setCursor(LCDML_TEXT_INDENTING, line * DISPLAY_FONT_HEIGHT);
   u8g2.print(lineText);
   u8g2.setDrawColor(1);
@@ -568,8 +562,152 @@ static void cbMenuDynParaSteamSetPoint(uint8_t line)
   static sys_param_t sysParam;
   char lineText[LCDML_DISP_COLS+1];
 
-  handleDynPara(SYS_PARAM_STEAM_SETPOINT, &sysParam, line);
-  snprintf(lineText, sizeof(lineText), "Steam Temp: %3.1f", sysParam.cur);
+  handleDynPara(line, SYS_PARAM_STEAM_SETPOINT, &sysParam, 0.5);
+  snprintf(lineText, sizeof(lineText), "Steam Temp. %5.1f", sysParam.cur);
+  u8g2.setCursor(LCDML_TEXT_INDENTING, line * DISPLAY_FONT_HEIGHT);
+  u8g2.print(lineText);
+  u8g2.setDrawColor(1);
+}
+
+
+/**************************************************************************//**
+ * \brief Callback for setting parameter "PID Kp" of coldstart phase.
+ * 
+ * \param line - display line of this parameter
+ ******************************************************************************/
+static void cbMenuDynParaPidKpStart(uint8_t line)
+{
+  static sys_param_t sysParam;
+  char lineText[LCDML_DISP_COLS+1];
+
+  handleDynPara(line, SYS_PARAM_PID_KP_START, &sysParam, 1.0);
+  snprintf(lineText, sizeof(lineText), "Kp Start     %3.0f", sysParam.cur);
+  u8g2.setCursor(LCDML_TEXT_INDENTING, line * DISPLAY_FONT_HEIGHT);
+  u8g2.print(lineText);
+  u8g2.setDrawColor(1);
+}
+
+
+/**************************************************************************//**
+ * \brief Callback for setting parameter "PID Tn" of coldstart phase.
+ * 
+ * \param line - display line of this parameter
+ ******************************************************************************/
+static void cbMenuDynParaPidTnStart(uint8_t line)
+{
+  static sys_param_t sysParam;
+  char lineText[LCDML_DISP_COLS+1];
+
+  handleDynPara(line, SYS_PARAM_PID_TN_START, &sysParam, 1.0);
+  snprintf(lineText, sizeof(lineText), "Tn Start     %3.0f", sysParam.cur);
+  u8g2.setCursor(LCDML_TEXT_INDENTING, line * DISPLAY_FONT_HEIGHT);
+  u8g2.print(lineText);
+  u8g2.setDrawColor(1);
+}
+
+
+/**************************************************************************//**
+ * \brief Callback for setting parameter "PID Kp" of regular operation.
+ * 
+ * \param line - display line of this parameter
+ ******************************************************************************/
+static void cbMenuDynParaPidKp(uint8_t line)
+{
+  static sys_param_t sysParam;
+  char lineText[LCDML_DISP_COLS+1];
+
+  handleDynPara(line, SYS_PARAM_PID_KP_REGULAR, &sysParam, 1.0);
+  snprintf(lineText, sizeof(lineText), "Kp           %3.0f", sysParam.cur);
+  u8g2.setCursor(LCDML_TEXT_INDENTING, line * DISPLAY_FONT_HEIGHT);
+  u8g2.print(lineText);
+  u8g2.setDrawColor(1);
+}
+
+
+/**************************************************************************//**
+ * \brief Callback for setting parameter "PID Tn" of regular operation.
+ * 
+ * \param line - display line of this parameter
+ ******************************************************************************/
+static void cbMenuDynParaPidTn(uint8_t line)
+{
+  static sys_param_t sysParam;
+  char lineText[LCDML_DISP_COLS+1];
+
+  handleDynPara(line, SYS_PARAM_PID_TN_REGULAR, &sysParam, 1.0);
+  snprintf(lineText, sizeof(lineText), "Tn           %3.0f", sysParam.cur);
+  u8g2.setCursor(LCDML_TEXT_INDENTING, line * DISPLAY_FONT_HEIGHT);
+  u8g2.print(lineText);
+  u8g2.setDrawColor(1);
+}
+
+
+/**************************************************************************//**
+ * \brief Callback for setting parameter "PID Tv" of regular operation.
+ * 
+ * \param line - display line of this parameter
+ ******************************************************************************/
+static void cbMenuDynParaPidTv(uint8_t line)
+{
+  static sys_param_t sysParam;
+  char lineText[LCDML_DISP_COLS+1];
+
+  handleDynPara(line, SYS_PARAM_PID_TV_REGULAR, &sysParam, 1.0);
+  snprintf(lineText, sizeof(lineText), "Tv           %3.0f", sysParam.cur);
+  u8g2.setCursor(LCDML_TEXT_INDENTING, line * DISPLAY_FONT_HEIGHT);
+  u8g2.print(lineText);
+  u8g2.setDrawColor(1);
+}
+
+
+/**************************************************************************//**
+ * \brief Callback for setting parameter "PID Kp" of brew detection phase.
+ * 
+ * \param line - display line of this parameter
+ ******************************************************************************/
+static void cbMenuDynParaPidKpBd(uint8_t line)
+{
+  static sys_param_t sysParam;
+  char lineText[LCDML_DISP_COLS+1];
+
+  handleDynPara(line, SYS_PARAM_PID_KP_BD, &sysParam, 1.0);
+  snprintf(lineText, sizeof(lineText), "Kp BD        %3.0f", sysParam.cur);
+  u8g2.setCursor(LCDML_TEXT_INDENTING, line * DISPLAY_FONT_HEIGHT);
+  u8g2.print(lineText);
+  u8g2.setDrawColor(1);
+}
+
+
+/**************************************************************************//**
+ * \brief Callback for setting parameter "PID Tn" of brew detection phase.
+ * 
+ * \param line - display line of this parameter
+ ******************************************************************************/
+static void cbMenuDynParaPidTnBd(uint8_t line)
+{
+  static sys_param_t sysParam;
+  char lineText[LCDML_DISP_COLS+1];
+
+  handleDynPara(line, SYS_PARAM_PID_TN_BD, &sysParam, 1.0);
+  snprintf(lineText, sizeof(lineText), "Tn BD        %3.0f", sysParam.cur);
+  u8g2.setCursor(LCDML_TEXT_INDENTING, line * DISPLAY_FONT_HEIGHT);
+  u8g2.print(lineText);
+  u8g2.setDrawColor(1);
+}
+
+
+/**************************************************************************//**
+ * \brief Callback for setting parameter "PID Tv" of brew detection phase.
+ * 
+ * \param line - display line of this parameter
+ ******************************************************************************/
+static void cbMenuDynParaPidTvBd(uint8_t line)
+{
+  static sys_param_t sysParam;
+  char lineText[LCDML_DISP_COLS+1];
+
+  handleDynPara(line, SYS_PARAM_PID_TV_BD, &sysParam, 1.0);
+  snprintf(lineText, sizeof(lineText), "Tv BD        %3.0f", sysParam.cur);
   u8g2.setCursor(LCDML_TEXT_INDENTING, line * DISPLAY_FONT_HEIGHT);
   u8g2.print(lineText);
   u8g2.setDrawColor(1);

@@ -2442,6 +2442,38 @@ int setSysParam(sys_param_type_t paramType, double currentValue)
       if (SteamON == 1)
         setPoint = currentValue;
       break;
+    case SYS_PARAM_PID_KP_START:
+      // case can be removed if all occurrences of 'startKp' are replaced with 'sysParam[SYS_PARAM_PID_KP_START]'
+      startKp = currentValue;
+      break;
+    case SYS_PARAM_PID_TN_START:
+      // case can be removed if all occurrences of 'startTn' are replaced with 'sysParam[SYS_PARAM_PID_TN_START]'
+      startTn = currentValue;
+      break;
+    case SYS_PARAM_PID_KP_REGULAR:
+      // case can be removed if all occurrences of 'aggKp' are replaced with 'sysParam[SYS_PARAM_PID_KP_REGULAR]'
+      aggKp = currentValue;
+      break;
+    case SYS_PARAM_PID_TN_REGULAR:
+      // case can be removed if all occurrences of 'aggTn' are replaced with 'sysParam[SYS_PARAM_PID_TN_REGULAR]'
+      aggTn = currentValue;
+      break;
+    case SYS_PARAM_PID_TV_REGULAR:
+      // case can be removed if all occurrences of 'aggTv' are replaced with 'sysParam[SYS_PARAM_PID_TV_REGULAR]'
+      aggTv = currentValue;
+      break;
+    case SYS_PARAM_PID_KP_BD:
+      // case can be removed if all occurrences of 'aggbKp' are replaced with 'sysParam[SYS_PARAM_PID_KP_BD]'
+      aggbKp = currentValue;
+      break;
+    case SYS_PARAM_PID_TN_BD:
+      // case can be removed if all occurrences of 'aggbTn' are replaced with 'sysParam[SYS_PARAM_PID_TN_BD]'
+      aggbTn = currentValue;
+      break;
+    case SYS_PARAM_PID_TV_BD:
+      // case can be removed if all occurrences of 'aggbTv' are replaced with 'sysParam[SYS_PARAM_PID_TV_BD]'
+      aggbTv = currentValue;
+      break;
     default:
       break;
   }
