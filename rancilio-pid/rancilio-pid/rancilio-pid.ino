@@ -203,14 +203,14 @@ static const sys_param_def_t sysParamInfo[SYS_PARAM__LAST_ENUM] =
   {  89.0,  99.0, SETPOINT,      "BrewSetPoint" },                              // SYS_PARAM_BREW_SETPOINT
   { 100.0, 125.0, STEAMSETPOINT, "SteamSetPoint" },                             // SYS_PARAM_STEAM_SETPOINT
   {   0.0, 100.0, STARTKP,       "" },                                          // SYS_PARAM_PID_KP_START
-  {   0.0, 100.0, STARTTN,       "" },                                          // SYS_PARAM_PID_TN_START
-  {   0.0, 100.0, 0.0,           "" },                                          // SYS_PARAM_PID_TV_START
+  {   0.0, 999.0, STARTTN,       "" },                                          // SYS_PARAM_PID_TN_START
+  {   0.0, 999.0, 0.0,           "" },                                          // SYS_PARAM_PID_TV_START
   {   0.0, 100.0, AGGKP,         "" },                                          // SYS_PARAM_PID_KP_REGULAR
-  {   0.0, 100.0, AGGTN,         "" },                                          // SYS_PARAM_PID_TN_REGULAR
-  {   0.0, 100.0, AGGTV,         "" },                                          // SYS_PARAM_PID_TV_REGULAR
+  {   0.0, 999.0, AGGTN,         "" },                                          // SYS_PARAM_PID_TN_REGULAR
+  {   0.0, 999.0, AGGTV,         "" },                                          // SYS_PARAM_PID_TV_REGULAR
   {   0.0, 100.0, AGGBKP,        "" },                                          // SYS_PARAM_PID_KP_BD
-  {   0.0, 100.0, AGGBTN,        "" },                                          // SYS_PARAM_PID_TN_BD
-  {   0.0, 100.0, AGGBTV,        "" },                                          // SYS_PARAM_PID_TV_BD
+  {   0.0, 999.0, AGGBTN,        "" },                                          // SYS_PARAM_PID_TN_BD
+  {   0.0, 999.0, AGGBTV,        "" },                                          // SYS_PARAM_PID_TV_BD
 };
 
 // array with current value of system parameters
