@@ -2430,6 +2430,15 @@ int readSysParamsFromStorage(void)
   EEPROM.get(120, brewtimersoftware);
   EEPROM.get(130, brewboarder);
   
+  // All new parameters have to be checked for validity to be backward-compatible
+  // with older firmware versions!
+  if (!isnan(EEPROM.get(140, dummy)))
+    startKp = dummy;
+  if (!isnan(EEPROM.get(150, dummy)))
+    startTn = dummy;
+  if (!isnan(EEPROM.get(160, dummy)))
+    SteamSetPoint = dummy;
+  
   // synchronize with current system parameter array...
   // TODO: use C++ references for automatic sync!
   setSysParam(SYS_PARAM_PID_KP_REGULAR, aggKp);
@@ -2439,6 +2448,9 @@ int readSysParamsFromStorage(void)
   setSysParam(SYS_PARAM_PID_KP_BD, aggbKp);
   setSysParam(SYS_PARAM_PID_TN_BD, aggbTn);
   setSysParam(SYS_PARAM_PID_TV_BD, aggbTv);
+  setSysParam(SYS_PARAM_PID_KP_START, startKp);
+  setSysParam(SYS_PARAM_PID_TN_START, startTn);
+  setSysParam(SYS_PARAM_STEAM_SETPOINT, SteamSetPoint);
 
   // EEPROM.commit() not necessary after read
   return 0;
@@ -2470,6 +2482,9 @@ int writeSysParamsToStorage(void)
   EEPROM.put(110, aggbTv);
   EEPROM.put(120, brewtimersoftware);
   EEPROM.put(130, brewboarder);
+  EEPROM.put(140, startKp);
+  EEPROM.put(150, startTn);
+  EEPROM.put(160, SteamSetPoint);
 
   // While Flash memory erase/write operations no other code must be executed!
   // disable any ISRs...
