@@ -37,7 +37,7 @@
  * TYPEDEFS
  ******************************************************************************/
 
-// buttons...
+//---buttons...-----------------------------------------------------------------
 typedef enum
 {
   // USED AS INDEX!
@@ -47,7 +47,7 @@ typedef enum
   BTN_TYPE__LAST_ENUM                                                           // must be the last enum!
 }btn_type_t;
 
-// object for dynamic menu parameter handling
+//---object for dynamic menu parameter handling...------------------------------
 typedef struct
 {
   sys_param_t sysParam;
@@ -66,7 +66,6 @@ static void lcdml_menu_control(void);
 static void cbMenuBack(uint8_t param);
 static void cbMenuExit(uint8_t param);
 static void cbMenuInformation(uint8_t param);
-// static void mFunc_para(uint8_t param);
 static void cbMenuDynParaBrewSetPoint(uint8_t line);
 static void cbMenuDynParaSteamSetPoint(uint8_t line);
 static void cbMenuDynParaPidKpStart(uint8_t line);
@@ -77,6 +76,7 @@ static void cbMenuDynParaPidTv(uint8_t line);
 static void cbMenuDynParaPidKpBd(uint8_t line);
 static void cbMenuDynParaPidTnBd(uint8_t line);
 static void cbMenuDynParaPidTvBd(uint8_t line);
+static void cbMenuSaveSettings(uint8_t param);
 
 
 
@@ -88,8 +88,6 @@ extern DebugStreamManager debugStream;
 
 //---buttons...-----------------------------------------------------------------
 static btn_t displayButton[BTN_TYPE__LAST_ENUM];
-//static btn_t displayButtonLeft;
-//static btn_t displayButtonRight;
 
 //---display...-----------------------------------------------------------------
 extern LCDMenuLib2 LCDML;
@@ -101,6 +99,7 @@ extern U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2;
 
 //---menu...--------------------------------------------------------------------
 static menu_dyn_param_t dynMenuParam4EditMode;
+static unsigned long menuTimer;
 
 LCDMenuLib2_menu LCDML_0 (255, 0, 0, NULL, NULL); // root menu element (do not change)
 LCDMenuLib2 LCDML(LCDML_0, LCDML_DISP_ROWS, LCDML_DISP_COLS, lcdml_menu_display, lcdml_menu_clear, lcdml_menu_control);
@@ -123,12 +122,13 @@ LCDML_addAdvanced (12, LCDML_0_2_2,   6, NULL,   "",             cbMenuDynParaPi
 LCDML_addAdvanced (13, LCDML_0_2_2,   7, NULL,   "",             cbMenuDynParaPidTnBd,       0, _LCDML_TYPE_dynParam);
 LCDML_addAdvanced (14, LCDML_0_2_2,   8, NULL,   "",             cbMenuDynParaPidTvBd,       0, _LCDML_TYPE_dynParam);
 LCDML_add         (15, LCDML_0_2_2,   9, "Back", cbMenuBack);
-LCDML_add         (16, LCDML_0_2,     3, "Back", cbMenuBack);
-LCDML_add         (17, LCDML_0,       3, "Exit", cbMenuExit);
+LCDML_add         (16, LCDML_0_2,     3, "Save Settings", cbMenuSaveSettings);
+LCDML_add         (17, LCDML_0_2,     4, "Back", cbMenuBack);
+LCDML_add         (18, LCDML_0,       3, "Exit", cbMenuExit);
 
 // menu element count - last element id
 // this value must be the same as the last menu element
-#define _LCDML_DISP_cnt    17
+#define _LCDML_DISP_cnt    18
 // create menu
 LCDML_createMenu(_LCDML_DISP_cnt);
 
@@ -292,7 +292,7 @@ static void lcdml_menu_display(void)
 /**************************************************************************//**
  * \brief Callback for menu "Back" function.
  * 
- * \param line - display line of this parameter
+ * \param param - parameter value
  ******************************************************************************/
 static void cbMenuBack(uint8_t param)
 {
@@ -310,7 +310,7 @@ static void cbMenuBack(uint8_t param)
 /**************************************************************************//**
  * \brief Callback for menu "Exit" function.
  * 
- * \param line - display line of this parameter
+ * \param param - parameter value
  ******************************************************************************/
 static void cbMenuExit(uint8_t param)
 {
@@ -330,7 +330,7 @@ static void cbMenuExit(uint8_t param)
 /**************************************************************************//**
  * \brief Callback for menu "Information".
  * 
- * \param line - display line of this parameter
+ * \param param - parameter value
  ******************************************************************************/
 static void cbMenuInformation(uint8_t param)
 {
@@ -342,14 +342,14 @@ static void cbMenuInformation(uint8_t param)
     // setup function
     u8g2.setFont(u8g2_font_profont11_tf);
     u8g2.clearBuffer();
-    u8g2.setCursor(0, DISPLAY_FONT_HEIGHT * 0); // line 0
+    u8g2.setCursor(0, DISPLAY_FONT_HEIGHT * 0); // line 1
     u8g2.println(getFwVersion());
     #if 0
-    u8g2.setCursor(0, DISPLAY_FONT_HEIGHT * 1); // line 1
+    u8g2.setCursor(0, DISPLAY_FONT_HEIGHT * 1); // line 2
     u8g2.println();
-    u8g2.setCursor(0, DISPLAY_FONT_HEIGHT * 2); // line 2
+    u8g2.setCursor(0, DISPLAY_FONT_HEIGHT * 2); // line 3
     u8g2.println();
-    u8g2.setCursor(0, DISPLAY_FONT_HEIGHT * 3); // line 3
+    u8g2.setCursor(0, DISPLAY_FONT_HEIGHT * 3); // line 4
     u8g2.println();
     #endif
     u8g2.sendBuffer();
@@ -370,6 +370,47 @@ static void cbMenuInformation(uint8_t param)
   if(LCDML.FUNC_close())      // ****** STABLE END *********
   {
     // you can here reset some global vars or do nothing
+  }
+}
+
+
+/**************************************************************************//**
+ * \brief Callback for menu "Save Settings".
+ * 
+ * \param param - parameter value
+ ******************************************************************************/
+static void cbMenuSaveSettings(uint8_t param)
+{
+  if (LCDML.FUNC_setup())          // ****** SETUP *********
+  {
+    // remmove compiler warnings when the param variable is not used:
+    LCDML_UNUSED(param);
+
+    // write settings to non-volatile storage...
+    u8g2.clearBuffer();
+    u8g2.setCursor(0, 0); // line 1
+    if (writeSysParamsToStorage() == 0)
+      u8g2.println("Saving... OK");
+    else
+      u8g2.println("Saving... ERR");
+    u8g2.sendBuffer();
+    
+    // set display time of this message
+    LCDML.FUNC_setLoopInterval(100);                                            // trigger loop function at 100ms interval
+    menuTimer = 0;
+    LCDML.TIMER_msReset(menuTimer);                                             // start message display timer
+  }
+
+  if (LCDML.FUNC_loop())           // ****** LOOP *********
+  {
+    if (LCDML.TIMER_ms(menuTimer, 1500))                                        // message display timer expired?
+    {                                                                           // yes, back to menu...
+      LCDML.FUNC_goBackToMenu();
+    }
+  }
+
+  if(LCDML.FUNC_close())      // ****** STABLE END *********
+  {
   }
 }
 

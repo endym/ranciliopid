@@ -52,8 +52,9 @@ typedef struct
 
 const char *getFwVersion(void);
 int getSysParam(sys_param_type_t paramType, sys_param_t *paramObj);
+int readSysParamsFromStorage(void);
 int setSysParam(sys_param_type_t paramType, double currentValue);
-
+int writeSysParamsToStorage(void);
 
 
 #endif // _RANCILIO_PID_H_

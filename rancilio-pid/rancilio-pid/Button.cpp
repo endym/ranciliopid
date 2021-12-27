@@ -12,7 +12,7 @@
  ******************************************************************************/
 
 #define DEBOUNCE_DELAY_MS    20
-#define HOLD_DELAY_MS        650
+#define HOLD_DELAY_MS        600
 
 
 

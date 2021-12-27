@@ -198,7 +198,7 @@ typedef struct
 // definition of non-volatile (constant) system parameter values
 static const sys_param_def_t sysParamInfo[SYS_PARAM__LAST_ENUM] =
 {
-// MUST BE SAME SEQUENCE AS in sys_param_type_t!
+// MUST BE SAME SEQUENCE AS IN sys_param_type_t!
 //  min,   max,   default,       MQTT name
   {  89.0,  99.0, SETPOINT,      "BrewSetPoint" },                              // SYS_PARAM_BREW_SETPOINT
   { 100.0, 125.0, STEAMSETPOINT, "SteamSetPoint" },                             // SYS_PARAM_STEAM_SETPOINT
@@ -1877,6 +1877,8 @@ void setup() {
           #endif 
         } 
       }
+      #elif (DISPLAY_MENU != 0)
+      readSysParamsFromStorage();
       #endif
     }
     else 
@@ -2123,7 +2125,7 @@ void looppid()
   //check if PID should run or not. If not, set to manuel and force output to zero
   // OFFLINE
   //voids Display & BD
-  #if DISPLAY != 0
+  #if (DISPLAY != 0)
   if (!isDisplayMenuActive)
   {
     unsigned long currentMillisDisplay = millis();
@@ -2427,6 +2429,16 @@ int readSysParamsFromStorage(void)
   EEPROM.get(110, aggbTv);
   EEPROM.get(120, brewtimersoftware);
   EEPROM.get(130, brewboarder);
+  
+  // synchronize with current system parameter array...
+  // TODO: use C++ references for automatic sync!
+  setSysParam(SYS_PARAM_PID_KP_REGULAR, aggKp);
+  setSysParam(SYS_PARAM_PID_TN_REGULAR, aggTn);
+  setSysParam(SYS_PARAM_PID_TV_REGULAR, aggTv);
+  setSysParam(SYS_PARAM_BREW_SETPOINT, BrewSetPoint);
+  setSysParam(SYS_PARAM_PID_KP_BD, aggbKp);
+  setSysParam(SYS_PARAM_PID_TN_BD, aggbTn);
+  setSysParam(SYS_PARAM_PID_TV_BD, aggbTv);
 
   // EEPROM.commit() not necessary after read
   return 0;
