@@ -51,6 +51,7 @@ typedef struct
  ******************************************************************************/
 
 const char *getFwVersion(void);
+const char *getMachineName(enum MACHINE id);
 int getSysParam(sys_param_type_t paramType, sys_param_t *paramObj);
 int readSysParamsFromStorage(void);
 int setSysParam(sys_param_type_t paramType, double currentValue);
