@@ -17,6 +17,7 @@
  ******************************************************************************/
 
 // display settings...
+#define DISPLAY_FONT_TITLE        u8g2_font_profont11_tf
 #define DISPLAY_FONT              u8g2_font_profont15_tf
 #define DISPLAY_FONT_WIDTH        7                                             // font width 
 #define DISPLAY_FONT_HEIGHT       15                                            // font heigt 
@@ -26,8 +27,9 @@
 #define DISPLAY_ROWS_MAX          (DISPLAY_HEIGHT/DISPLAY_FONT_HEIGHT)
 
 // menu settings...
-#define LCDML_DISP_COLS           DISPLAY_COLS_MAX
-#define LCDML_DISP_ROWS           DISPLAY_ROWS_MAX
+#define LCDML_TITLE_ROWS          1                                             // menu title rows
+#define LCDML_COLS                DISPLAY_COLS_MAX                              // menu columns
+#define LCDML_ROWS                (DISPLAY_ROWS_MAX - LCDML_TITLE_ROWS)         // menu rows w/o menu title
 #define LCDML_SCROLLBAR_WIDTH     3                                             // scrollbar width 
 #define LCDML_TEXT_INDENTING      (DISPLAY_FONT_WIDTH+2)
 
@@ -102,7 +104,7 @@ static menu_dyn_param_t dynMenuParam4EditMode;
 static unsigned long menuTimer;
 
 LCDMenuLib2_menu LCDML_0 (255, 0, 0, NULL, NULL); // root menu element (do not change)
-LCDMenuLib2 LCDML(LCDML_0, LCDML_DISP_ROWS, LCDML_DISP_COLS, lcdml_menu_display, lcdml_menu_clear, lcdml_menu_control);
+LCDMenuLib2 LCDML(LCDML_0, LCDML_ROWS, LCDML_COLS, lcdml_menu_display, lcdml_menu_clear, lcdml_menu_control);
 
 // LCDML_add      (id, prev_layer, new_num, lang_char_array, callback_function)
 LCDML_add         (0,  LCDML_0,       1, "Information", cbMenuInformation);
@@ -122,7 +124,7 @@ LCDML_addAdvanced (12, LCDML_0_2_2,   6, NULL,   "",             cbMenuDynParaPi
 LCDML_addAdvanced (13, LCDML_0_2_2,   7, NULL,   "",             cbMenuDynParaPidTnBd,       0, _LCDML_TYPE_dynParam);
 LCDML_addAdvanced (14, LCDML_0_2_2,   8, NULL,   "",             cbMenuDynParaPidTvBd,       0, _LCDML_TYPE_dynParam);
 LCDML_add         (15, LCDML_0_2_2,   9, "Back", cbMenuBack);
-LCDML_add         (16, LCDML_0_2,     3, "Save Settings", cbMenuSaveSettings);
+LCDML_add         (16, LCDML_0_2,     3, "Save", cbMenuSaveSettings);
 LCDML_add         (17, LCDML_0_2,     4, "Back", cbMenuBack);
 LCDML_add         (18, LCDML_0,       3, "Exit", cbMenuExit);
 
@@ -204,20 +206,19 @@ static void lcdml_menu_display(void)
 /* ******************************************************************** */
 {
   // content variable
-  char content_text[LCDML_DISP_COLS];  // save the content text of every menu element
+  char content_text[LCDML_COLS+1];  // save the content text of every menu element
   // menu element object
   LCDMenuLib2_menu *tmp;
   // some limit values
   uint8_t i = LCDML.MENU_getScroll();
-  uint8_t maxi = LCDML_DISP_ROWS + i;
+  uint8_t maxi = LCDML_ROWS + i;
   uint8_t n = 0;
   // scrollbar
-  uint8_t n_max             = (LCDML.MENU_getChilds() >= LCDML_DISP_ROWS) ? LCDML_DISP_ROWS : (LCDML.MENU_getChilds());
+  uint8_t n_max             = (LCDML.MENU_getChilds() >= LCDML_ROWS) ? LCDML_ROWS : (LCDML.MENU_getChilds());
   uint8_t scrollbar_max     = LCDML.MENU_getChilds();
   uint8_t scrollbar_cur_pos = LCDML.MENU_getCursorPosAbs();
-  // uint8_t scroll_pos        = ((1.*n_max * LCDML_DISP_ROWS) / (scrollbar_max - 1) * scrollbar_cur_pos);
+  // uint8_t scroll_pos        = ((1.*n_max * LCDML_ROWS) / (scrollbar_max - 1) * scrollbar_cur_pos);
 
-  u8g2.setFont(DISPLAY_FONT);                                                   // set font
   u8g2.clearBuffer();                                                           // clear lcd
   n = 0;
   i = LCDML.MENU_getScroll();
@@ -225,7 +226,25 @@ static void lcdml_menu_display(void)
   // check if this element has children
   if ((tmp = LCDML.MENU_getDisplayedObj()) != NULL)
   {
+    // display a menu title with the parent element name
+    if (LCDML_TITLE_ROWS > 0)
+    {
+      u8g2.setFont(DISPLAY_FONT_TITLE);                                         // set title font
+      if (LCDML.MENU_getLayer() == 0)                                           // root menu?
+      {                                                                         // yes, use fixed text...
+        strncpy(content_text, getMachineName((enum MACHINE)MACHINEID), sizeof(content_text)-1);
+        content_text[sizeof(content_text)-1] = 0;
+      }
+      else
+      {                                                                         // no, use parent menu name...
+        LCDML_getContent(content_text, LCDML.MENU_getParentID());
+      }
+      u8g2.setCursor(0, 0);
+      u8g2.print(content_text);
+    }
+
     // loop to display lines
+    u8g2.setFont(DISPLAY_FONT);                                                 // set menu item font
     do
     {
       // check if a menu element has a condition and if the condition be true
@@ -236,7 +255,7 @@ static void lcdml_menu_display(void)
         {
           // display normal content
           LCDML_getContent(content_text, tmp->getID());
-          u8g2.setCursor(LCDML_TEXT_INDENTING, DISPLAY_FONT_HEIGHT * (n));
+          u8g2.setCursor(LCDML_TEXT_INDENTING, DISPLAY_FONT_HEIGHT * (LCDML_TITLE_ROWS + n));
           u8g2.println(content_text);
         }
         else
@@ -254,7 +273,8 @@ static void lcdml_menu_display(void)
   }
 
   // set cursor
-  u8g2.setCursor(0, DISPLAY_FONT_HEIGHT * (LCDML.MENU_getCursorPos()));
+  u8g2.setFont(DISPLAY_FONT);                                                   // set menu item font
+  u8g2.setCursor(0, DISPLAY_FONT_HEIGHT * (LCDML_TITLE_ROWS + LCDML.MENU_getCursorPos()));
   u8g2.println(">");
 
   // display scrollbar when more content as rows available and with > 2
@@ -264,7 +284,7 @@ static void lcdml_menu_display(void)
     u8g2.drawFrame(DISPLAY_WIDTH - LCDML_SCROLLBAR_WIDTH, 0, LCDML_SCROLLBAR_WIDTH, DISPLAY_HEIGHT-0);
     // calculate scrollbar length
     uint8_t scrollbar_block_length = scrollbar_max - n_max;
-    scrollbar_block_length = (DISPLAY_HEIGHT-0) / (scrollbar_block_length + LCDML_DISP_ROWS);
+    scrollbar_block_length = (DISPLAY_HEIGHT-0) / (scrollbar_block_length + LCDML_ROWS);
     // set scrollbar
     if (scrollbar_cur_pos == 0)
     {                                                                           // top position     (min)
@@ -422,7 +442,7 @@ static void mFunc_para(uint8_t param)
 {
   if(LCDML.FUNC_setup())          // ****** SETUP *********
   {
-    char lineText[LCDML_DISP_COLS+1];
+    char lineText[LCDML_COLS+1];
     sprintf (lineText, "parameter: %d", param);
     
     // setup function
@@ -551,19 +571,19 @@ static void handleDynPara(uint8_t line, sys_param_type_t paramType, sys_param_t 
   {                                                                             // yes, invert line background...
     // clear line with inverted color...
     u8g2.setDrawColor(1);
-    u8g2.drawBox(0, line*DISPLAY_FONT_HEIGHT, DISPLAY_WIDTH, DISPLAY_FONT_HEIGHT);
+    u8g2.drawBox(0, (LCDML_TITLE_ROWS+line)*DISPLAY_FONT_HEIGHT, DISPLAY_WIDTH, DISPLAY_FONT_HEIGHT);
     u8g2.setDrawColor(0);
   }
   else
   {                                                                             // no, normal navigation mode...
     // clear line...
     u8g2.setDrawColor(0);
-    u8g2.drawBox(0, line*DISPLAY_FONT_HEIGHT, DISPLAY_WIDTH, DISPLAY_FONT_HEIGHT);
+    u8g2.drawBox(0, (LCDML_TITLE_ROWS+line)*DISPLAY_FONT_HEIGHT, DISPLAY_WIDTH, DISPLAY_FONT_HEIGHT);
     u8g2.setDrawColor(1);
     #if 0
     // clear the line manuel because clear the complete content is disabled when a external refreshed function is active
-    u8g2.setCursor(LCDML_TEXT_INDENTING, line);
-    for(uint8_t i=0;i<LCDML_DISP_COLS-3;i++) // -3 because: 
+    u8g2.setCursor(LCDML_TEXT_INDENTING, LCDML_TITLE_ROWS+line);
+    for(uint8_t i=0;i<LCDML_COLS-3;i++) // -3 because: 
                                               // -1 for counter from 0 to x 
                                               // -1 for cursor position
                                               // -1 for scrollbar on the end
@@ -583,11 +603,11 @@ static void handleDynPara(uint8_t line, sys_param_type_t paramType, sys_param_t 
 static void cbMenuDynParaBrewSetPoint(uint8_t line)
 {
   static sys_param_t sysParam;
-  char lineText[LCDML_DISP_COLS+1];
+  char lineText[LCDML_COLS+1];
 
   handleDynPara(line, SYS_PARAM_BREW_SETPOINT, &sysParam, 0.5);
   snprintf(lineText, sizeof(lineText), "Brew Temp.  %5.1f", sysParam.cur);
-  u8g2.setCursor(LCDML_TEXT_INDENTING, line * DISPLAY_FONT_HEIGHT);
+  u8g2.setCursor(LCDML_TEXT_INDENTING, (LCDML_TITLE_ROWS+line) * DISPLAY_FONT_HEIGHT);
   u8g2.print(lineText);
   u8g2.setDrawColor(1);
 }
@@ -601,11 +621,11 @@ static void cbMenuDynParaBrewSetPoint(uint8_t line)
 static void cbMenuDynParaSteamSetPoint(uint8_t line)
 {
   static sys_param_t sysParam;
-  char lineText[LCDML_DISP_COLS+1];
+  char lineText[LCDML_COLS+1];
 
   handleDynPara(line, SYS_PARAM_STEAM_SETPOINT, &sysParam, 0.5);
   snprintf(lineText, sizeof(lineText), "Steam Temp. %5.1f", sysParam.cur);
-  u8g2.setCursor(LCDML_TEXT_INDENTING, line * DISPLAY_FONT_HEIGHT);
+  u8g2.setCursor(LCDML_TEXT_INDENTING, (LCDML_TITLE_ROWS+line) * DISPLAY_FONT_HEIGHT);
   u8g2.print(lineText);
   u8g2.setDrawColor(1);
 }
@@ -619,11 +639,11 @@ static void cbMenuDynParaSteamSetPoint(uint8_t line)
 static void cbMenuDynParaPidKpStart(uint8_t line)
 {
   static sys_param_t sysParam;
-  char lineText[LCDML_DISP_COLS+1];
+  char lineText[LCDML_COLS+1];
 
   handleDynPara(line, SYS_PARAM_PID_KP_START, &sysParam, 1.0);
   snprintf(lineText, sizeof(lineText), "Kp Start     %3.0f", sysParam.cur);
-  u8g2.setCursor(LCDML_TEXT_INDENTING, line * DISPLAY_FONT_HEIGHT);
+  u8g2.setCursor(LCDML_TEXT_INDENTING, (LCDML_TITLE_ROWS+line) * DISPLAY_FONT_HEIGHT);
   u8g2.print(lineText);
   u8g2.setDrawColor(1);
 }
@@ -637,11 +657,11 @@ static void cbMenuDynParaPidKpStart(uint8_t line)
 static void cbMenuDynParaPidTnStart(uint8_t line)
 {
   static sys_param_t sysParam;
-  char lineText[LCDML_DISP_COLS+1];
+  char lineText[LCDML_COLS+1];
 
   handleDynPara(line, SYS_PARAM_PID_TN_START, &sysParam, 1.0);
   snprintf(lineText, sizeof(lineText), "Tn Start     %3.0f", sysParam.cur);
-  u8g2.setCursor(LCDML_TEXT_INDENTING, line * DISPLAY_FONT_HEIGHT);
+  u8g2.setCursor(LCDML_TEXT_INDENTING, (LCDML_TITLE_ROWS+line) * DISPLAY_FONT_HEIGHT);
   u8g2.print(lineText);
   u8g2.setDrawColor(1);
 }
@@ -655,11 +675,11 @@ static void cbMenuDynParaPidTnStart(uint8_t line)
 static void cbMenuDynParaPidKp(uint8_t line)
 {
   static sys_param_t sysParam;
-  char lineText[LCDML_DISP_COLS+1];
+  char lineText[LCDML_COLS+1];
 
   handleDynPara(line, SYS_PARAM_PID_KP_REGULAR, &sysParam, 1.0);
   snprintf(lineText, sizeof(lineText), "Kp           %3.0f", sysParam.cur);
-  u8g2.setCursor(LCDML_TEXT_INDENTING, line * DISPLAY_FONT_HEIGHT);
+  u8g2.setCursor(LCDML_TEXT_INDENTING, (LCDML_TITLE_ROWS+line) * DISPLAY_FONT_HEIGHT);
   u8g2.print(lineText);
   u8g2.setDrawColor(1);
 }
@@ -673,11 +693,11 @@ static void cbMenuDynParaPidKp(uint8_t line)
 static void cbMenuDynParaPidTn(uint8_t line)
 {
   static sys_param_t sysParam;
-  char lineText[LCDML_DISP_COLS+1];
+  char lineText[LCDML_COLS+1];
 
   handleDynPara(line, SYS_PARAM_PID_TN_REGULAR, &sysParam, 1.0);
   snprintf(lineText, sizeof(lineText), "Tn           %3.0f", sysParam.cur);
-  u8g2.setCursor(LCDML_TEXT_INDENTING, line * DISPLAY_FONT_HEIGHT);
+  u8g2.setCursor(LCDML_TEXT_INDENTING, (LCDML_TITLE_ROWS+line) * DISPLAY_FONT_HEIGHT);
   u8g2.print(lineText);
   u8g2.setDrawColor(1);
 }
@@ -691,11 +711,11 @@ static void cbMenuDynParaPidTn(uint8_t line)
 static void cbMenuDynParaPidTv(uint8_t line)
 {
   static sys_param_t sysParam;
-  char lineText[LCDML_DISP_COLS+1];
+  char lineText[LCDML_COLS+1];
 
   handleDynPara(line, SYS_PARAM_PID_TV_REGULAR, &sysParam, 1.0);
   snprintf(lineText, sizeof(lineText), "Tv           %3.0f", sysParam.cur);
-  u8g2.setCursor(LCDML_TEXT_INDENTING, line * DISPLAY_FONT_HEIGHT);
+  u8g2.setCursor(LCDML_TEXT_INDENTING, (LCDML_TITLE_ROWS+line) * DISPLAY_FONT_HEIGHT);
   u8g2.print(lineText);
   u8g2.setDrawColor(1);
 }
@@ -709,11 +729,11 @@ static void cbMenuDynParaPidTv(uint8_t line)
 static void cbMenuDynParaPidKpBd(uint8_t line)
 {
   static sys_param_t sysParam;
-  char lineText[LCDML_DISP_COLS+1];
+  char lineText[LCDML_COLS+1];
 
   handleDynPara(line, SYS_PARAM_PID_KP_BD, &sysParam, 1.0);
   snprintf(lineText, sizeof(lineText), "Kp BD        %3.0f", sysParam.cur);
-  u8g2.setCursor(LCDML_TEXT_INDENTING, line * DISPLAY_FONT_HEIGHT);
+  u8g2.setCursor(LCDML_TEXT_INDENTING, (LCDML_TITLE_ROWS+line) * DISPLAY_FONT_HEIGHT);
   u8g2.print(lineText);
   u8g2.setDrawColor(1);
 }
@@ -727,11 +747,11 @@ static void cbMenuDynParaPidKpBd(uint8_t line)
 static void cbMenuDynParaPidTnBd(uint8_t line)
 {
   static sys_param_t sysParam;
-  char lineText[LCDML_DISP_COLS+1];
+  char lineText[LCDML_COLS+1];
 
   handleDynPara(line, SYS_PARAM_PID_TN_BD, &sysParam, 1.0);
   snprintf(lineText, sizeof(lineText), "Tn BD        %3.0f", sysParam.cur);
-  u8g2.setCursor(LCDML_TEXT_INDENTING, line * DISPLAY_FONT_HEIGHT);
+  u8g2.setCursor(LCDML_TEXT_INDENTING, (LCDML_TITLE_ROWS+line) * DISPLAY_FONT_HEIGHT);
   u8g2.print(lineText);
   u8g2.setDrawColor(1);
 }
@@ -745,11 +765,11 @@ static void cbMenuDynParaPidTnBd(uint8_t line)
 static void cbMenuDynParaPidTvBd(uint8_t line)
 {
   static sys_param_t sysParam;
-  char lineText[LCDML_DISP_COLS+1];
+  char lineText[LCDML_COLS+1];
 
   handleDynPara(line, SYS_PARAM_PID_TV_BD, &sysParam, 1.0);
   snprintf(lineText, sizeof(lineText), "Tv BD        %3.0f", sysParam.cur);
-  u8g2.setCursor(LCDML_TEXT_INDENTING, line * DISPLAY_FONT_HEIGHT);
+  u8g2.setCursor(LCDML_TEXT_INDENTING, (LCDML_TITLE_ROWS+line) * DISPLAY_FONT_HEIGHT);
   u8g2.print(lineText);
   u8g2.setDrawColor(1);
 }
