@@ -199,18 +199,20 @@ typedef struct
 static const sys_param_def_t sysParamInfo[SYS_PARAM__LAST_ENUM] =
 {
 // MUST BE SAME SEQUENCE AS IN sys_param_type_t!
-//  min,   max,   default,       MQTT name
-  {  89.0,  99.0, SETPOINT,      "BrewSetPoint" },                              // SYS_PARAM_BREW_SETPOINT
-  { 100.0, 125.0, STEAMSETPOINT, "SteamSetPoint" },                             // SYS_PARAM_STEAM_SETPOINT
-  {   0.0, 100.0, STARTKP,       "" },                                          // SYS_PARAM_PID_KP_START
-  {   0.0, 999.0, STARTTN,       "" },                                          // SYS_PARAM_PID_TN_START
-  {   0.0, 999.0, 0.0,           "" },                                          // SYS_PARAM_PID_TV_START
-  {   0.0, 100.0, AGGKP,         "" },                                          // SYS_PARAM_PID_KP_REGULAR
-  {   0.0, 999.0, AGGTN,         "" },                                          // SYS_PARAM_PID_TN_REGULAR
-  {   0.0, 999.0, AGGTV,         "" },                                          // SYS_PARAM_PID_TV_REGULAR
-  {   0.0, 100.0, AGGBKP,        "" },                                          // SYS_PARAM_PID_KP_BD
-  {   0.0, 999.0, AGGBTN,        "" },                                          // SYS_PARAM_PID_TN_BD
-  {   0.0, 999.0, AGGBTV,        "" },                                          // SYS_PARAM_PID_TV_BD
+//  min,   max,   default,            MQTT name
+  {  89.0,  99.0, SETPOINT,           "BrewSetPoint" },                         // SYS_PARAM_BREW_SETPOINT
+  { 100.0, 125.0, STEAMSETPOINT,      "SteamSetPoint" },                        // SYS_PARAM_STEAM_SETPOINT
+  {   0.0, 100.0, STARTKP,            "" },                                     // SYS_PARAM_PID_KP_START
+  {   0.0, 999.0, STARTTN,            "" },                                     // SYS_PARAM_PID_TN_START
+  {   0.0, 999.0, 0.0,                "" },                                     // SYS_PARAM_PID_TV_START
+  {   0.0, 100.0, AGGKP,              "" },                                     // SYS_PARAM_PID_KP_REGULAR
+  {   0.0, 999.0, AGGTN,              "" },                                     // SYS_PARAM_PID_TN_REGULAR
+  {   0.0, 999.0, AGGTV,              "" },                                     // SYS_PARAM_PID_TV_REGULAR
+  {   0.0, 100.0, AGGBKP,             "" },                                     // SYS_PARAM_PID_KP_BD
+  {   0.0, 999.0, AGGBTN,             "" },                                     // SYS_PARAM_PID_TN_BD
+  {   0.0, 999.0, AGGBTV,             "" },                                     // SYS_PARAM_PID_TV_BD
+  {   0.0, 999.0, 120.0,              "" },                                     // SYS_PARAM_BREW_SW_TIMER
+  {   0.0, 999.0, BREWDETECTIONLIMIT, "" },                                     // SYS_PARAM_BD_THRESHOLD
 };
 
 // array with current value of system parameters
@@ -270,8 +272,8 @@ double aggbKi = 0;
 double aggbKi = aggbKp / aggbTn;
 #endif
 double aggbKd = aggbTv * aggbKp ;
-double brewtimersoftware = 45;    // 20-5 for detection
-double brewboarder = BREWDETECTIONLIMIT;  // brew detection limit
+double brewtimersoftware = sysParamInfo[SYS_PARAM_BREW_SW_TIMER].def; // brew SW timer (starts after detection)
+double brewboarder = sysParamInfo[SYS_PARAM_BD_THRESHOLD].def;  // brew detection threshold
 const int PonE = PONE;
 
 /********************************************************
@@ -2410,6 +2412,14 @@ int setSysParam(sys_param_type_t paramType, double currentValue)
       // case can be removed if all occurrences of 'aggbTv' are replaced with 'sysParam[SYS_PARAM_PID_TV_BD]'
       aggbTv = currentValue;
       break;
+    case SYS_PARAM_BREW_SW_TIMER:
+      // case can be removed if all occurrences of 'brewtimersoftware' are replaced with 'sysParam[SYS_PARAM_BREW_SW_TIMER]'
+      brewtimersoftware = currentValue;
+      break;
+    case SYS_PARAM_BD_THRESHOLD:
+      // case can be removed if all occurrences of 'brewboarder' are replaced with 'sysParam[SYS_PARAM_BD_THRESHOLD]'
+      brewboarder = currentValue;
+      break;
     default:
       break;
   }
@@ -2472,6 +2482,8 @@ int readSysParamsFromStorage(void)
   setSysParam(SYS_PARAM_PID_KP_START, startKp);
   setSysParam(SYS_PARAM_PID_TN_START, startTn);
   setSysParam(SYS_PARAM_STEAM_SETPOINT, SteamSetPoint);
+  setSysParam(SYS_PARAM_BREW_SW_TIMER, brewtimersoftware);
+  setSysParam(SYS_PARAM_BD_THRESHOLD, brewboarder);
 
   // EEPROM.commit() not necessary after read
   return 0;

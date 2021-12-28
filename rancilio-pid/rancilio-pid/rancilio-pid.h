@@ -31,6 +31,8 @@ typedef enum
   SYS_PARAM_PID_KP_BD,                                                          // PID P part at brew detection phase
   SYS_PARAM_PID_TN_BD,                                                          // PID I part at brew detection phase
   SYS_PARAM_PID_TV_BD,                                                          // PID D part at brew detection phase
+  SYS_PARAM_BREW_SW_TIMER,                                                      // brew software timer
+  SYS_PARAM_BD_THRESHOLD,                                                       // brew detection limit
 
   SYS_PARAM__LAST_ENUM                                                          // must be the last one!
 }sys_param_type_t;

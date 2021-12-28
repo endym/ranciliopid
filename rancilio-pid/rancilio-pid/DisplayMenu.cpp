@@ -68,7 +68,9 @@ static void lcdml_menu_control(void);
 static void cbMenuBack(uint8_t param);
 static void cbMenuExit(uint8_t param);
 static void cbMenuInformation(uint8_t param);
+static void cbMenuDynParaBdThreshold(uint8_t line);
 static void cbMenuDynParaBrewSetPoint(uint8_t line);
+static void cbMenuDynParaBrewSwTimer(uint8_t line);
 static void cbMenuDynParaSteamSetPoint(uint8_t line);
 static void cbMenuDynParaPidKpStart(uint8_t line);
 static void cbMenuDynParaPidTnStart(uint8_t line);
@@ -106,31 +108,34 @@ static unsigned long menuTimer;
 LCDMenuLib2_menu LCDML_0 (255, 0, 0, NULL, NULL); // root menu element (do not change)
 LCDMenuLib2 LCDML(LCDML_0, LCDML_ROWS, LCDML_COLS, lcdml_menu_display, lcdml_menu_clear, lcdml_menu_control);
 
-// LCDML_add      (id, prev_layer, new_num, lang_char_array, callback_function)
-LCDML_add         (0,  LCDML_0,       1, "Information", cbMenuInformation);
+// LCDML_add             (id, prev_layer, new_num, lang_char_array, callback_function)
 // LCDMenuLib_addAdvanced(id, prev_layer, new_num, condition, lang_char_array, callback_function, parameter (0-255), menu function type  )
-LCDML_addAdvanced (1,  LCDML_0,       2, NULL,   "Settings"    , NULL,                       0, _LCDML_TYPE_default);
-LCDML_addAdvanced (2,  LCDML_0_2,     1, NULL,   "Temperatures", NULL,                       0, _LCDML_TYPE_default);
-LCDML_addAdvanced (3,  LCDML_0_2_1,   1, NULL,   "",             cbMenuDynParaBrewSetPoint,  0, _LCDML_TYPE_dynParam);
-LCDML_addAdvanced (4,  LCDML_0_2_1,   2, NULL,   "",             cbMenuDynParaSteamSetPoint, 0, _LCDML_TYPE_dynParam);
-LCDML_add         (5,  LCDML_0_2_1,   3, "Back", cbMenuBack);
-LCDML_addAdvanced (6,  LCDML_0_2,     2, NULL,   "PID",          NULL,                       0, _LCDML_TYPE_default);
-LCDML_addAdvanced (7,  LCDML_0_2_2,   1, NULL,   "",             cbMenuDynParaPidKpStart,    0, _LCDML_TYPE_dynParam);
-LCDML_addAdvanced (8,  LCDML_0_2_2,   2, NULL,   "",             cbMenuDynParaPidTnStart,    0, _LCDML_TYPE_dynParam);
-LCDML_addAdvanced (9,  LCDML_0_2_2,   3, NULL,   "",             cbMenuDynParaPidKp,         0, _LCDML_TYPE_dynParam);
-LCDML_addAdvanced (10, LCDML_0_2_2,   4, NULL,   "",             cbMenuDynParaPidTn,         0, _LCDML_TYPE_dynParam);
-LCDML_addAdvanced (11, LCDML_0_2_2,   5, NULL,   "",             cbMenuDynParaPidTv,         0, _LCDML_TYPE_dynParam);
-LCDML_addAdvanced (12, LCDML_0_2_2,   6, NULL,   "",             cbMenuDynParaPidKpBd,       0, _LCDML_TYPE_dynParam);
-LCDML_addAdvanced (13, LCDML_0_2_2,   7, NULL,   "",             cbMenuDynParaPidTnBd,       0, _LCDML_TYPE_dynParam);
-LCDML_addAdvanced (14, LCDML_0_2_2,   8, NULL,   "",             cbMenuDynParaPidTvBd,       0, _LCDML_TYPE_dynParam);
-LCDML_add         (15, LCDML_0_2_2,   9, "Back", cbMenuBack);
-LCDML_add         (16, LCDML_0_2,     3, "Save", cbMenuSaveSettings);
-LCDML_add         (17, LCDML_0_2,     4, "Back", cbMenuBack);
-LCDML_add         (18, LCDML_0,       3, "Exit", cbMenuExit);
+LCDML_add         (0,  LCDML_0,       1, "Information", cbMenuInformation);
+LCDML_addAdvanced (1,  LCDML_0,       2, NULL,   "Settings"    ,   NULL,                       0, _LCDML_TYPE_default);
+LCDML_addAdvanced (2,  LCDML_0_2,     1, NULL,   "",               cbMenuDynParaBrewSetPoint,  0, _LCDML_TYPE_dynParam);
+LCDML_addAdvanced (3,  LCDML_0_2,     2, NULL,   "",               cbMenuDynParaSteamSetPoint, 0, _LCDML_TYPE_dynParam);
+LCDML_addAdvanced (4,  LCDML_0_2,     3, NULL,   "",               cbMenuDynParaPidKp,         0, _LCDML_TYPE_dynParam);
+LCDML_addAdvanced (5,  LCDML_0_2,     4, NULL,   "",               cbMenuDynParaPidTn,         0, _LCDML_TYPE_dynParam);
+LCDML_addAdvanced (6,  LCDML_0_2,     5, NULL,   "",               cbMenuDynParaPidTv,         0, _LCDML_TYPE_dynParam);
+LCDML_addAdvanced (7,  LCDML_0_2,     6, NULL,   "Cold Start",     NULL,                       0, _LCDML_TYPE_default);
+LCDML_addAdvanced (8,  LCDML_0_2_6,   1, NULL,   "",               cbMenuDynParaPidKpStart,    0, _LCDML_TYPE_dynParam);
+LCDML_addAdvanced (9,  LCDML_0_2_6,   2, NULL,   "",               cbMenuDynParaPidTnStart,    0, _LCDML_TYPE_dynParam);
+LCDML_add         (10, LCDML_0_2_6,   3, "Back", cbMenuBack);
+LCDML_addAdvanced (11, LCDML_0_2,     7, NULL,   "Brew Detection", NULL,                       0, _LCDML_TYPE_default);
+LCDML_addAdvanced (12, LCDML_0_2_7,   1, NULL,   "",               cbMenuDynParaBdThreshold,   0, _LCDML_TYPE_dynParam);
+LCDML_addAdvanced (13, LCDML_0_2_7,   2, NULL,   "",               cbMenuDynParaBrewSwTimer,   0, _LCDML_TYPE_dynParam);
+LCDML_addAdvanced (14, LCDML_0_2_7,   3, NULL,   "",               cbMenuDynParaPidKpBd,       0, _LCDML_TYPE_dynParam);
+LCDML_addAdvanced (15, LCDML_0_2_7,   4, NULL,   "",               cbMenuDynParaPidTnBd,       0, _LCDML_TYPE_dynParam);
+LCDML_addAdvanced (16, LCDML_0_2_7,   5, NULL,   "",               cbMenuDynParaPidTvBd,       0, _LCDML_TYPE_dynParam);
+LCDML_add         (17, LCDML_0_2_7,   6, "Back", cbMenuBack);
+LCDML_add         (18, LCDML_0_2,     8, "Save", cbMenuSaveSettings);
+LCDML_add         (19, LCDML_0_2,     9, "Back", cbMenuBack);
+LCDML_add         (20, LCDML_0,       3, "Exit", cbMenuExit);
 
 // menu element count - last element id
 // this value must be the same as the last menu element
-#define _LCDML_DISP_cnt    18
+#define _LCDML_DISP_cnt    20
+
 // create menu
 LCDML_createMenu(_LCDML_DISP_cnt);
 
@@ -606,7 +611,7 @@ static void cbMenuDynParaBrewSetPoint(uint8_t line)
   char lineText[LCDML_COLS+1];
 
   handleDynPara(line, SYS_PARAM_BREW_SETPOINT, &sysParam, 0.5);
-  snprintf(lineText, sizeof(lineText), "Brew Temp.  %5.1f", sysParam.cur);
+  snprintf(lineText, sizeof(lineText), "Brew Temp. %5.1f", sysParam.cur);
   u8g2.setCursor(LCDML_TEXT_INDENTING, (LCDML_TITLE_ROWS+line) * DISPLAY_FONT_HEIGHT);
   u8g2.print(lineText);
   u8g2.setDrawColor(1);
@@ -623,8 +628,8 @@ static void cbMenuDynParaSteamSetPoint(uint8_t line)
   static sys_param_t sysParam;
   char lineText[LCDML_COLS+1];
 
-  handleDynPara(line, SYS_PARAM_STEAM_SETPOINT, &sysParam, 0.5);
-  snprintf(lineText, sizeof(lineText), "Steam Temp. %5.1f", sysParam.cur);
+  handleDynPara(line, SYS_PARAM_STEAM_SETPOINT, &sysParam, 1.0);
+  snprintf(lineText, sizeof(lineText), "Steam Temp.  %3.0f", sysParam.cur);
   u8g2.setCursor(LCDML_TEXT_INDENTING, (LCDML_TITLE_ROWS+line) * DISPLAY_FONT_HEIGHT);
   u8g2.print(lineText);
   u8g2.setDrawColor(1);
@@ -642,7 +647,7 @@ static void cbMenuDynParaPidKpStart(uint8_t line)
   char lineText[LCDML_COLS+1];
 
   handleDynPara(line, SYS_PARAM_PID_KP_START, &sysParam, 1.0);
-  snprintf(lineText, sizeof(lineText), "Kp Start     %3.0f", sysParam.cur);
+  snprintf(lineText, sizeof(lineText), "PID Kp       %3.0f", sysParam.cur);
   u8g2.setCursor(LCDML_TEXT_INDENTING, (LCDML_TITLE_ROWS+line) * DISPLAY_FONT_HEIGHT);
   u8g2.print(lineText);
   u8g2.setDrawColor(1);
@@ -660,7 +665,7 @@ static void cbMenuDynParaPidTnStart(uint8_t line)
   char lineText[LCDML_COLS+1];
 
   handleDynPara(line, SYS_PARAM_PID_TN_START, &sysParam, 1.0);
-  snprintf(lineText, sizeof(lineText), "Tn Start     %3.0f", sysParam.cur);
+  snprintf(lineText, sizeof(lineText), "PID Tn       %3.0f", sysParam.cur);
   u8g2.setCursor(LCDML_TEXT_INDENTING, (LCDML_TITLE_ROWS+line) * DISPLAY_FONT_HEIGHT);
   u8g2.print(lineText);
   u8g2.setDrawColor(1);
@@ -678,7 +683,7 @@ static void cbMenuDynParaPidKp(uint8_t line)
   char lineText[LCDML_COLS+1];
 
   handleDynPara(line, SYS_PARAM_PID_KP_REGULAR, &sysParam, 1.0);
-  snprintf(lineText, sizeof(lineText), "Kp           %3.0f", sysParam.cur);
+  snprintf(lineText, sizeof(lineText), "PID Kp       %3.0f", sysParam.cur);
   u8g2.setCursor(LCDML_TEXT_INDENTING, (LCDML_TITLE_ROWS+line) * DISPLAY_FONT_HEIGHT);
   u8g2.print(lineText);
   u8g2.setDrawColor(1);
@@ -696,7 +701,7 @@ static void cbMenuDynParaPidTn(uint8_t line)
   char lineText[LCDML_COLS+1];
 
   handleDynPara(line, SYS_PARAM_PID_TN_REGULAR, &sysParam, 1.0);
-  snprintf(lineText, sizeof(lineText), "Tn           %3.0f", sysParam.cur);
+  snprintf(lineText, sizeof(lineText), "PID Tn       %3.0f", sysParam.cur);
   u8g2.setCursor(LCDML_TEXT_INDENTING, (LCDML_TITLE_ROWS+line) * DISPLAY_FONT_HEIGHT);
   u8g2.print(lineText);
   u8g2.setDrawColor(1);
@@ -714,7 +719,7 @@ static void cbMenuDynParaPidTv(uint8_t line)
   char lineText[LCDML_COLS+1];
 
   handleDynPara(line, SYS_PARAM_PID_TV_REGULAR, &sysParam, 1.0);
-  snprintf(lineText, sizeof(lineText), "Tv           %3.0f", sysParam.cur);
+  snprintf(lineText, sizeof(lineText), "PID Tv       %3.0f", sysParam.cur);
   u8g2.setCursor(LCDML_TEXT_INDENTING, (LCDML_TITLE_ROWS+line) * DISPLAY_FONT_HEIGHT);
   u8g2.print(lineText);
   u8g2.setDrawColor(1);
@@ -732,7 +737,7 @@ static void cbMenuDynParaPidKpBd(uint8_t line)
   char lineText[LCDML_COLS+1];
 
   handleDynPara(line, SYS_PARAM_PID_KP_BD, &sysParam, 1.0);
-  snprintf(lineText, sizeof(lineText), "Kp BD        %3.0f", sysParam.cur);
+  snprintf(lineText, sizeof(lineText), "PID Kp       %3.0f", sysParam.cur);
   u8g2.setCursor(LCDML_TEXT_INDENTING, (LCDML_TITLE_ROWS+line) * DISPLAY_FONT_HEIGHT);
   u8g2.print(lineText);
   u8g2.setDrawColor(1);
@@ -750,7 +755,7 @@ static void cbMenuDynParaPidTnBd(uint8_t line)
   char lineText[LCDML_COLS+1];
 
   handleDynPara(line, SYS_PARAM_PID_TN_BD, &sysParam, 1.0);
-  snprintf(lineText, sizeof(lineText), "Tn BD        %3.0f", sysParam.cur);
+  snprintf(lineText, sizeof(lineText), "PID Tn       %3.0f", sysParam.cur);
   u8g2.setCursor(LCDML_TEXT_INDENTING, (LCDML_TITLE_ROWS+line) * DISPLAY_FONT_HEIGHT);
   u8g2.print(lineText);
   u8g2.setDrawColor(1);
@@ -768,7 +773,43 @@ static void cbMenuDynParaPidTvBd(uint8_t line)
   char lineText[LCDML_COLS+1];
 
   handleDynPara(line, SYS_PARAM_PID_TV_BD, &sysParam, 1.0);
-  snprintf(lineText, sizeof(lineText), "Tv BD        %3.0f", sysParam.cur);
+  snprintf(lineText, sizeof(lineText), "PID Tv       %3.0f", sysParam.cur);
+  u8g2.setCursor(LCDML_TEXT_INDENTING, (LCDML_TITLE_ROWS+line) * DISPLAY_FONT_HEIGHT);
+  u8g2.print(lineText);
+  u8g2.setDrawColor(1);
+}
+
+
+/**************************************************************************//**
+ * \brief Callback for setting parameter "brew detection threshold".
+ * 
+ * \param line - display line of this parameter
+ ******************************************************************************/
+static void cbMenuDynParaBdThreshold(uint8_t line)
+{
+  static sys_param_t sysParam;
+  char lineText[LCDML_COLS+1];
+
+  handleDynPara(line, SYS_PARAM_BD_THRESHOLD, &sysParam, 1.0);
+  snprintf(lineText, sizeof(lineText), "Threshold    %3.0f", sysParam.cur);
+  u8g2.setCursor(LCDML_TEXT_INDENTING, (LCDML_TITLE_ROWS+line) * DISPLAY_FONT_HEIGHT);
+  u8g2.print(lineText);
+  u8g2.setDrawColor(1);
+}
+
+
+/**************************************************************************//**
+ * \brief Callback for setting parameter "brew software timer".
+ * 
+ * \param line - display line of this parameter
+ ******************************************************************************/
+static void cbMenuDynParaBrewSwTimer(uint8_t line)
+{
+  static sys_param_t sysParam;
+  char lineText[LCDML_COLS+1];
+
+  handleDynPara(line, SYS_PARAM_BREW_SW_TIMER, &sysParam, 1.0);
+  snprintf(lineText, sizeof(lineText), "SW Timer     %3.0f", sysParam.cur);
   u8g2.setCursor(LCDML_TEXT_INDENTING, (LCDML_TITLE_ROWS+line) * DISPLAY_FONT_HEIGHT);
   u8g2.print(lineText);
   u8g2.setDrawColor(1);
