@@ -28,9 +28,13 @@
 
 // menu settings...
 #define LCDML_TITLE_ROWS          1                                             // menu title rows
-#define LCDML_COLS                DISPLAY_COLS_MAX                              // menu columns
-#define LCDML_ROWS                (DISPLAY_ROWS_MAX - LCDML_TITLE_ROWS)         // menu rows w/o menu title
 #define LCDML_SCROLLBAR_WIDTH     3                                             // scrollbar width 
+#if (LCDML_SCROLLBAR_WIDTH == 0)
+#define LCDML_COLS                DISPLAY_COLS_MAX                              // menu columns
+#else
+#define LCDML_COLS                (DISPLAY_COLS_MAX - 1)                        // menu columns
+#endif
+#define LCDML_ROWS                (DISPLAY_ROWS_MAX - LCDML_TITLE_ROWS)         // menu rows w/o menu title
 #define LCDML_TEXT_INDENTING      (DISPLAY_FONT_WIDTH+2)
 
 
@@ -211,7 +215,7 @@ static void lcdml_menu_display(void)
 /* ******************************************************************** */
 {
   // content variable
-  char content_text[LCDML_COLS+1];  // save the content text of every menu element
+  char content_text[LCDML_COLS];  // save the content text of every menu element
   // menu element object
   LCDMenuLib2_menu *tmp;
   // some limit values
@@ -223,6 +227,7 @@ static void lcdml_menu_display(void)
   uint8_t scrollbar_max     = LCDML.MENU_getChilds();
   uint8_t scrollbar_cur_pos = LCDML.MENU_getCursorPosAbs();
   // uint8_t scroll_pos        = ((1.*n_max * LCDML_ROWS) / (scrollbar_max - 1) * scrollbar_cur_pos);
+  uint8_t stringIdx;
 
   u8g2.clearBuffer();                                                           // clear lcd
   n = 0;
@@ -255,17 +260,24 @@ static void lcdml_menu_display(void)
       // check if a menu element has a condition and if the condition be true
       if (tmp->checkCondition())
       {
-        // check the type off a menu element
-        if(tmp->checkType_menu() == true)
-        {
-          // display normal content
+        if (tmp->checkType_menu() == true)                                      // default menu type?
+        {                                                                       // yes, display menu content...
           LCDML_getContent(content_text, tmp->getID());
+          if (tmp->getChild(1) != NULL)                                         // has sub-menu?
+          {                                                                     // yes...
+            // add sub-menu indicator at last column...
+            for (stringIdx=strlen(content_text); stringIdx<(sizeof(content_text)-2); stringIdx++)
+              content_text[stringIdx] = ' ';
+            content_text[sizeof(content_text)-2] = '>';
+            content_text[sizeof(content_text)-1] = 0;
+          }
           u8g2.setCursor(LCDML_TEXT_INDENTING, DISPLAY_FONT_HEIGHT * (LCDML_TITLE_ROWS + n));
           u8g2.println(content_text);
         }
         else
-        {
-          if(tmp->checkType_dynParam()) {
+        {                                                                       // no, non-default menu type...
+          if (tmp->checkType_dynParam())
+          {
             tmp->callback(n);
           }
         }
@@ -280,7 +292,7 @@ static void lcdml_menu_display(void)
   // set cursor
   u8g2.setFont(DISPLAY_FONT);                                                   // set menu item font
   u8g2.setCursor(0, DISPLAY_FONT_HEIGHT * (LCDML_TITLE_ROWS + LCDML.MENU_getCursorPos()));
-  u8g2.println(">");
+  u8g2.println("*");
 
   // display scrollbar when more content as rows available and with > 2
   if (scrollbar_max > n_max && LCDML_SCROLLBAR_WIDTH > 2)
