@@ -114,26 +114,26 @@ LCDMenuLib2 LCDML(LCDML_0, LCDML_ROWS, LCDML_COLS, lcdml_menu_display, lcdml_men
 
 // LCDML_add             (id, prev_layer, new_num, lang_char_array, callback_function)
 // LCDMenuLib_addAdvanced(id, prev_layer, new_num, condition, lang_char_array, callback_function, parameter (0-255), menu function type  )
-LCDML_add         (0,  LCDML_0,       1, "Information", cbMenuInformation);
-LCDML_addAdvanced (1,  LCDML_0,       2, NULL,   "Settings"    ,   NULL,                       0, _LCDML_TYPE_default);
-LCDML_addAdvanced (2,  LCDML_0_2,     1, NULL,   "",               cbMenuDynParaBrewSetPoint,  0, _LCDML_TYPE_dynParam);
-LCDML_addAdvanced (3,  LCDML_0_2,     2, NULL,   "",               cbMenuDynParaSteamSetPoint, 0, _LCDML_TYPE_dynParam);
-LCDML_addAdvanced (4,  LCDML_0_2,     3, NULL,   "",               cbMenuDynParaPidKp,         0, _LCDML_TYPE_dynParam);
-LCDML_addAdvanced (5,  LCDML_0_2,     4, NULL,   "",               cbMenuDynParaPidTn,         0, _LCDML_TYPE_dynParam);
-LCDML_addAdvanced (6,  LCDML_0_2,     5, NULL,   "",               cbMenuDynParaPidTv,         0, _LCDML_TYPE_dynParam);
-LCDML_addAdvanced (7,  LCDML_0_2,     6, NULL,   "Cold Start",     NULL,                       0, _LCDML_TYPE_default);
-LCDML_addAdvanced (8,  LCDML_0_2_6,   1, NULL,   "",               cbMenuDynParaPidKpStart,    0, _LCDML_TYPE_dynParam);
-LCDML_addAdvanced (9,  LCDML_0_2_6,   2, NULL,   "",               cbMenuDynParaPidTnStart,    0, _LCDML_TYPE_dynParam);
-LCDML_add         (10, LCDML_0_2_6,   3, "Back", cbMenuBack);
-LCDML_addAdvanced (11, LCDML_0_2,     7, NULL,   "Brew Detection", NULL,                       0, _LCDML_TYPE_default);
-LCDML_addAdvanced (12, LCDML_0_2_7,   1, NULL,   "",               cbMenuDynParaBdThreshold,   0, _LCDML_TYPE_dynParam);
-LCDML_addAdvanced (13, LCDML_0_2_7,   2, NULL,   "",               cbMenuDynParaBrewSwTimer,   0, _LCDML_TYPE_dynParam);
-LCDML_addAdvanced (14, LCDML_0_2_7,   3, NULL,   "",               cbMenuDynParaPidKpBd,       0, _LCDML_TYPE_dynParam);
-LCDML_addAdvanced (15, LCDML_0_2_7,   4, NULL,   "",               cbMenuDynParaPidTnBd,       0, _LCDML_TYPE_dynParam);
-LCDML_addAdvanced (16, LCDML_0_2_7,   5, NULL,   "",               cbMenuDynParaPidTvBd,       0, _LCDML_TYPE_dynParam);
-LCDML_add         (17, LCDML_0_2_7,   6, "Back", cbMenuBack);
-LCDML_add         (18, LCDML_0_2,     8, "Save", cbMenuSaveSettings);
-LCDML_add         (19, LCDML_0_2,     9, "Back", cbMenuBack);
+LCDML_addAdvanced (0,  LCDML_0,       1, NULL,   "Settings",       NULL,                       0, _LCDML_TYPE_default);
+LCDML_addAdvanced (1,  LCDML_0_1,     1, NULL,   "",               cbMenuDynParaBrewSetPoint,  0, _LCDML_TYPE_dynParam);
+LCDML_addAdvanced (2,  LCDML_0_1,     2, NULL,   "",               cbMenuDynParaSteamSetPoint, 0, _LCDML_TYPE_dynParam);
+LCDML_addAdvanced (3,  LCDML_0_1,     3, NULL,   "",               cbMenuDynParaPidKp,         0, _LCDML_TYPE_dynParam);
+LCDML_addAdvanced (4,  LCDML_0_1,     4, NULL,   "",               cbMenuDynParaPidTn,         0, _LCDML_TYPE_dynParam);
+LCDML_addAdvanced (5,  LCDML_0_1,     5, NULL,   "",               cbMenuDynParaPidTv,         0, _LCDML_TYPE_dynParam);
+LCDML_addAdvanced (6,  LCDML_0_1,     6, NULL,   "Cold Start",     NULL,                       0, _LCDML_TYPE_default);
+LCDML_addAdvanced (7,  LCDML_0_1_6,   1, NULL,   "",               cbMenuDynParaPidKpStart,    0, _LCDML_TYPE_dynParam);
+LCDML_addAdvanced (8,  LCDML_0_1_6,   2, NULL,   "",               cbMenuDynParaPidTnStart,    0, _LCDML_TYPE_dynParam);
+LCDML_add         (9,  LCDML_0_1_6,   3, "Back", cbMenuBack);
+LCDML_addAdvanced (10, LCDML_0_1,     7, NULL,   "Brew Detection", NULL,                       0, _LCDML_TYPE_default);
+LCDML_addAdvanced (11, LCDML_0_1_7,   1, NULL,   "",               cbMenuDynParaBdThreshold,   0, _LCDML_TYPE_dynParam);
+LCDML_addAdvanced (12, LCDML_0_1_7,   2, NULL,   "",               cbMenuDynParaBrewSwTimer,   0, _LCDML_TYPE_dynParam);
+LCDML_addAdvanced (13, LCDML_0_1_7,   3, NULL,   "",               cbMenuDynParaPidKpBd,       0, _LCDML_TYPE_dynParam);
+LCDML_addAdvanced (14, LCDML_0_1_7,   4, NULL,   "",               cbMenuDynParaPidTnBd,       0, _LCDML_TYPE_dynParam);
+LCDML_addAdvanced (15, LCDML_0_1_7,   5, NULL,   "",               cbMenuDynParaPidTvBd,       0, _LCDML_TYPE_dynParam);
+LCDML_add         (16, LCDML_0_1_7,   6, "Back", cbMenuBack);
+LCDML_add         (17, LCDML_0_1,     8, "Save", cbMenuSaveSettings);
+LCDML_add         (18, LCDML_0_1,     9, "Back", cbMenuBack);
+LCDML_add         (19, LCDML_0,       2, "Information", cbMenuInformation);
 LCDML_add         (20, LCDML_0,       3, "Exit", cbMenuExit);
 
 // menu element count - last element id
