@@ -205,7 +205,7 @@ static const sys_param_def_t sysParamInfo[SYS_PARAM__LAST_ENUM] =
   {   0,   999, AGGTN,               10,  "" },                               // SYS_PARAM_PID_TN_REGULAR
   {   0,   999, AGGTV,               20,  "" },                               // SYS_PARAM_PID_TV_REGULAR
   {  89,   105, SETPOINT,            30,  "BrewSetPoint" },                   // SYS_PARAM_BREW_SETPOINT
-  {   0, 60000, 25000,               30,  "brewtime" },                       // SYS_PARAM_BREW_TIME
+  {   0, 60000, 25000,               40,  "brewtime" },                       // SYS_PARAM_BREW_TIME
   {   0, 10000, 2000,                50,  "preinfusion" },                    // SYS_PARAM_PRE_INFUSION_TIME
   {   0, 20000, 5000,                60,  "preinfusionpause" },               // SYS_PARAM_PRE_INFUSION_PAUSE
   {   0,   100, AGGBKP,              90,  "" },                               // SYS_PARAM_PID_KP_BD
