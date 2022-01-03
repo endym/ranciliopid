@@ -192,27 +192,31 @@ typedef struct
   double min;                                                                   // min. value
   double max;                                                                   // max. value
   double def;                                                                   // default value
-  const char mqttName[15];                                                      // MQTT name
+  int storageAddr;                                                              // storage address (-1 = do not store)
+  const char mqttName[20];                                                      // MQTT name (none = do not publish)
 }sys_param_def_t;
 
 // definition of non-volatile (constant) system parameter values
 static const sys_param_def_t sysParamInfo[SYS_PARAM__LAST_ENUM] =
 {
 // MUST BE SAME SEQUENCE AS IN sys_param_type_t!
-//  min,   max,   default,            MQTT name
-  {  89.0,  99.0, SETPOINT,           "BrewSetPoint" },                         // SYS_PARAM_BREW_SETPOINT
-  { 100.0, 125.0, STEAMSETPOINT,      "SteamSetPoint" },                        // SYS_PARAM_STEAM_SETPOINT
-  {   0.0, 100.0, STARTKP,            "" },                                     // SYS_PARAM_PID_KP_START
-  {   0.0, 999.0, STARTTN,            "" },                                     // SYS_PARAM_PID_TN_START
-  {   0.0, 999.0, 0.0,                "" },                                     // SYS_PARAM_PID_TV_START
-  {   0.0, 100.0, AGGKP,              "" },                                     // SYS_PARAM_PID_KP_REGULAR
-  {   0.0, 999.0, AGGTN,              "" },                                     // SYS_PARAM_PID_TN_REGULAR
-  {   0.0, 999.0, AGGTV,              "" },                                     // SYS_PARAM_PID_TV_REGULAR
-  {   0.0, 100.0, AGGBKP,             "" },                                     // SYS_PARAM_PID_KP_BD
-  {   0.0, 999.0, AGGBTN,             "" },                                     // SYS_PARAM_PID_TN_BD
-  {   0.0, 999.0, AGGBTV,             "" },                                     // SYS_PARAM_PID_TV_BD
-  {   0.0, 999.0, 120.0,              "" },                                     // SYS_PARAM_BREW_SW_TIMER
-  {   0.0, 999.0, BREWDETECTIONLIMIT, "" },                                     // SYS_PARAM_BD_THRESHOLD
+//  min,   max, default,   storage addr, MQTT name
+  {   0,   100, AGGKP,                0,  "" },                               // SYS_PARAM_PID_KP_REGULAR
+  {   0,   999, AGGTN,               10,  "" },                               // SYS_PARAM_PID_TN_REGULAR
+  {   0,   999, AGGTV,               20,  "" },                               // SYS_PARAM_PID_TV_REGULAR
+  {  89,   105, SETPOINT,            30,  "BrewSetPoint" },                   // SYS_PARAM_BREW_SETPOINT
+  {   0, 60000, 25000,               30,  "brewtime" },                       // SYS_PARAM_BREW_TIME
+  {   0, 10000, 2000,                50,  "preinfusion" },                    // SYS_PARAM_PRE_INFUSION_TIME
+  {   0, 20000, 5000,                60,  "preinfusionpause" },               // SYS_PARAM_PRE_INFUSION_PAUSE
+  {   0,   100, AGGBKP,              90,  "" },                               // SYS_PARAM_PID_KP_BD
+  {   0,   999, AGGBTN,             100,  "" },                               // SYS_PARAM_PID_TN_BD
+  {   0,   999, AGGBTV,             110,  "" },                               // SYS_PARAM_PID_TV_BD
+  {   0,   999, 120,                120,  "" },                               // SYS_PARAM_BREW_SW_TIMER
+  {   0,   999, BREWDETECTIONLIMIT, 130,  "" },                               // SYS_PARAM_BD_THRESHOLD
+  {   0,   100, STARTKP,            140,  "" },                               // SYS_PARAM_PID_KP_START
+  {   0,   999, STARTTN,            150,  "" },                               // SYS_PARAM_PID_TN_START
+  {   0,   999, 0,                   -1,  "" },                               // SYS_PARAM_PID_TV_START
+  { 100,   125, STEAMSETPOINT,      160,  "SteamSetPoint" },                  // SYS_PARAM_STEAM_SETPOINT
 };
 
 // array with current value of system parameters
@@ -263,17 +267,17 @@ int firstreading = 1 ;          // Ini of the field, also used for sensor check
 /********************************************************
    PID - values for offline brewdetection
 *****************************************************/
-double aggbKp = sysParamInfo[SYS_PARAM_PID_KP_BD].def;
-double aggbTn = sysParamInfo[SYS_PARAM_PID_TN_BD].def;
-double aggbTv = sysParamInfo[SYS_PARAM_PID_TV_BD].def;
+double& aggbKp = sysParam[SYS_PARAM_PID_KP_BD];                                 // reference of parameter array entry
+double& aggbTn = sysParam[SYS_PARAM_PID_TN_BD];                                 // reference of parameter array entry
+double& aggbTv = sysParam[SYS_PARAM_PID_TV_BD];                                 // reference of parameter array entry
 #if aggbTn == 0
 double aggbKi = 0;
 #else
 double aggbKi = aggbKp / aggbTn;
 #endif
 double aggbKd = aggbTv * aggbKp ;
-double brewtimersoftware = sysParamInfo[SYS_PARAM_BREW_SW_TIMER].def; // brew SW timer (starts after detection)
-double brewboarder = sysParamInfo[SYS_PARAM_BD_THRESHOLD].def;  // brew detection threshold
+double& brewtimersoftware = sysParam[SYS_PARAM_BREW_SW_TIMER];                  // brew SW timer starting after detection (reference of parameter array entry)
+double& brewboarder = sysParam[SYS_PARAM_BD_THRESHOLD];                         // brew detection threshold (reference of parameter array entry)
 const int PonE = PONE;
 
 /********************************************************
@@ -304,16 +308,16 @@ double Input, Output;
 double setPointTemp;
 double previousInput = 0;
 
-double BrewSetPoint = sysParamInfo[SYS_PARAM_BREW_SETPOINT].def;
-double setPoint = BrewSetPoint;
-double SteamSetPoint = sysParamInfo[SYS_PARAM_STEAM_SETPOINT].def;
+double& BrewSetPoint = sysParam[SYS_PARAM_BREW_SETPOINT];                       // brew setpoint (reference of parameter array entry)
+double setPoint = BrewSetPoint;                                                 // current used PID setpoint
+double& SteamSetPoint = sysParam[SYS_PARAM_STEAM_SETPOINT];                     // steam setpoint (reference of parameter array entry)
 int    SteamON = 0;
 int    SteamFirstON = 0;
-double aggKp = sysParamInfo[SYS_PARAM_PID_KP_REGULAR].def;
-double aggTn = sysParamInfo[SYS_PARAM_PID_TN_REGULAR].def;
-double aggTv = sysParamInfo[SYS_PARAM_PID_TV_REGULAR].def;
-double startKp = sysParamInfo[SYS_PARAM_PID_KP_START].def;
-double startTn = sysParamInfo[SYS_PARAM_PID_TN_START].def;
+double& aggKp = sysParam[SYS_PARAM_PID_KP_REGULAR];                             // regular PID Kp (reference of parameter array entry)
+double& aggTn = sysParam[SYS_PARAM_PID_TN_REGULAR];                             // regular PID Tn (reference of parameter array entry)
+double& aggTv = sysParam[SYS_PARAM_PID_TV_REGULAR];                             // regular PID Tv (reference of parameter array entry)
+double& startKp = sysParam[SYS_PARAM_PID_KP_START];                             // cold start PID Kp (reference of parameter array entry)
+double& startTn = sysParam[SYS_PARAM_PID_TN_START];                             // cold start PID Tn (reference of parameter array entry)
 #if startTn == 0
 double startKi = 0;
 #else
@@ -845,6 +849,7 @@ bool mqtt_publish(const char *reading, char *payload)
 #if MQTT
     char topic[120];
     snprintf(topic, 120, "%s%s/%s", mqtt_topic_prefix, hostname, reading);
+    debugStream.writeI("%s(): publish \"%s\"", __FUNCTION__, topic);
     return mqtt.publish(topic, payload, true);
 #else
     return false;
@@ -1686,7 +1691,7 @@ void setup() {
 
   EEPROM.begin(1024);
 
-  // init current value of system parameters with default value...
+  // init system parameters with default offline values...
   for (int paramType=0; paramType<SYS_PARAM__LAST_ENUM; paramType++)
     sysParam[paramType] = sysParamInfo[paramType].def;
   
@@ -2359,72 +2364,28 @@ int setSysParam(sys_param_type_t paramType, double currentValue)
   }
 
   // set current value
+  debugStream.writeI("%s(): set value %.2f for type %i", __FUNCTION__, currentValue, paramType);
   sysParam[paramType] = currentValue;
 
-  // send MQTT message if a name is defined
-  if (strlen(sysParamInfo[paramType].mqttName) > 0)
-    mqtt_publish(sysParamInfo[paramType].mqttName, number2string(currentValue));
-
-  //////////////////////////////////////////////////////////////////////////////
-  // This is for compatibility to current source code structure only!
-  // The needed refactoring would touch a lot of lines which would lead to merge conflicts.
+  // special parameter handling...
   switch (paramType)
   {
-    case SYS_PARAM_BREW_SETPOINT:
-      BrewSetPoint = currentValue;
-      if (SteamON == 0)
-        setPoint = currentValue;
+    case SYS_PARAM_BREW_SETPOINT:                                               // brew setpoint changed and
+      if (SteamON == 0)                                                         // not steam mode?
+        setPoint = currentValue;                                                // yes -> update current setpoint
       break;
-    case SYS_PARAM_STEAM_SETPOINT:
-      SteamSetPoint = currentValue;
-      if (SteamON == 1)
-        setPoint = currentValue;
-      break;
-    case SYS_PARAM_PID_KP_START:
-      // case can be removed if all occurrences of 'startKp' are replaced with 'sysParam[SYS_PARAM_PID_KP_START]'
-      startKp = currentValue;
-      break;
-    case SYS_PARAM_PID_TN_START:
-      // case can be removed if all occurrences of 'startTn' are replaced with 'sysParam[SYS_PARAM_PID_TN_START]'
-      startTn = currentValue;
-      break;
-    case SYS_PARAM_PID_KP_REGULAR:
-      // case can be removed if all occurrences of 'aggKp' are replaced with 'sysParam[SYS_PARAM_PID_KP_REGULAR]'
-      aggKp = currentValue;
-      break;
-    case SYS_PARAM_PID_TN_REGULAR:
-      // case can be removed if all occurrences of 'aggTn' are replaced with 'sysParam[SYS_PARAM_PID_TN_REGULAR]'
-      aggTn = currentValue;
-      break;
-    case SYS_PARAM_PID_TV_REGULAR:
-      // case can be removed if all occurrences of 'aggTv' are replaced with 'sysParam[SYS_PARAM_PID_TV_REGULAR]'
-      aggTv = currentValue;
-      break;
-    case SYS_PARAM_PID_KP_BD:
-      // case can be removed if all occurrences of 'aggbKp' are replaced with 'sysParam[SYS_PARAM_PID_KP_BD]'
-      aggbKp = currentValue;
-      break;
-    case SYS_PARAM_PID_TN_BD:
-      // case can be removed if all occurrences of 'aggbTn' are replaced with 'sysParam[SYS_PARAM_PID_TN_BD]'
-      aggbTn = currentValue;
-      break;
-    case SYS_PARAM_PID_TV_BD:
-      // case can be removed if all occurrences of 'aggbTv' are replaced with 'sysParam[SYS_PARAM_PID_TV_BD]'
-      aggbTv = currentValue;
-      break;
-    case SYS_PARAM_BREW_SW_TIMER:
-      // case can be removed if all occurrences of 'brewtimersoftware' are replaced with 'sysParam[SYS_PARAM_BREW_SW_TIMER]'
-      brewtimersoftware = currentValue;
-      break;
-    case SYS_PARAM_BD_THRESHOLD:
-      // case can be removed if all occurrences of 'brewboarder' are replaced with 'sysParam[SYS_PARAM_BD_THRESHOLD]'
-      brewboarder = currentValue;
+    case SYS_PARAM_STEAM_SETPOINT:                                              // steam setpoint changed and
+      if (SteamON == 1)                                                         // steam mode?
+        setPoint = currentValue;                                                // yes -> update current setpoint
       break;
     default:
       break;
   }
-  //////////////////////////////////////////////////////////////////////////////
-  
+
+  // send MQTT message if a MQTT name is defined
+  if (strlen(sysParamInfo[paramType].mqttName) > 0)
+    mqtt_publish(sysParamInfo[paramType].mqttName, number2string(currentValue));
+
   return 0;
 }
 
@@ -2437,8 +2398,8 @@ int setSysParam(sys_param_type_t paramType, double currentValue)
  ******************************************************************************/
 int readSysParamsFromStorage(void) 
 {
-  int addr;
-  double dummy;
+  int addr, paramType;
+  double paramValue;
 
   // check if any data are programmed...
   // An erased (or never programmed) Flash memory is filled with 0xFF.
@@ -2454,51 +2415,27 @@ int readSysParamsFromStorage(void)
   }
   
   // check first value, if there is a valid number...
-  EEPROM.get(0, dummy);
-  if (isnan(dummy))                                                             // invalid floating point number?
+  EEPROM.get(0, paramValue);
+  if (isnan(paramValue))                                                        // invalid floating point number?
   {                                                                             // yes...
-    debugStream.writeI("%s(): no NV data found (addr 0=%f)", __FUNCTION__, dummy);
+    debugStream.writeI("%s(): no NV data found (addr 0=%f)", __FUNCTION__, paramValue);
     return -2;
   }
   debugStream.writeI("%s(): data found", __FUNCTION__);
 
   // read stored system parameter values...
-  EEPROM.get(0, aggKp);
-  EEPROM.get(10, aggTn);
-  EEPROM.get(20, aggTv);
-  EEPROM.get(30, BrewSetPoint);
-  EEPROM.get(40, brewtime);
-  EEPROM.get(50, preinfusion);
-  EEPROM.get(60, preinfusionpause);
-  EEPROM.get(90, aggbKp);
-  EEPROM.get(100, aggbTn);
-  EEPROM.get(110, aggbTv);
-  EEPROM.get(120, brewtimersoftware);
-  EEPROM.get(130, brewboarder);
-  
-  // All new parameters have to be checked for validity to be backward-compatible
-  // with older firmware versions!
-  if (!isnan(EEPROM.get(140, dummy)))
-    startKp = dummy;
-  if (!isnan(EEPROM.get(150, dummy)))
-    startTn = dummy;
-  if (!isnan(EEPROM.get(160, dummy)))
-    SteamSetPoint = dummy;
-  
-  // synchronize with current system parameter array...
-  // TODO: use C++ references for automatic sync!
-  setSysParam(SYS_PARAM_PID_KP_REGULAR, aggKp);
-  setSysParam(SYS_PARAM_PID_TN_REGULAR, aggTn);
-  setSysParam(SYS_PARAM_PID_TV_REGULAR, aggTv);
-  setSysParam(SYS_PARAM_BREW_SETPOINT, BrewSetPoint);
-  setSysParam(SYS_PARAM_PID_KP_BD, aggbKp);
-  setSysParam(SYS_PARAM_PID_TN_BD, aggbTn);
-  setSysParam(SYS_PARAM_PID_TV_BD, aggbTv);
-  setSysParam(SYS_PARAM_PID_KP_START, startKp);
-  setSysParam(SYS_PARAM_PID_TN_START, startTn);
-  setSysParam(SYS_PARAM_STEAM_SETPOINT, SteamSetPoint);
-  setSysParam(SYS_PARAM_BREW_SW_TIMER, brewtimersoftware);
-  setSysParam(SYS_PARAM_BD_THRESHOLD, brewboarder);
+  for (paramType=0; paramType<SYS_PARAM__LAST_ENUM; paramType++)
+  {
+    if (sysParamInfo[paramType].storageAddr >= 0)                               // parameter stored?
+    {                                                                           // yes...
+      EEPROM.get(sysParamInfo[paramType].storageAddr, paramValue);              // read from storage
+      debugStream.writeI("%s(): read value %.2f for type %i at 0x%04x",
+                         __FUNCTION__, paramValue, paramType,
+                         sysParamInfo[paramType].storageAddr);
+      if (!isnan(paramValue))                                                   // valid number?
+        setSysParam((sys_param_type_t)paramType, paramValue);                   // yes -> set current value
+    }
+  }
 
   // EEPROM.commit() not necessary after read
   return 0;
@@ -2514,25 +2451,20 @@ int readSysParamsFromStorage(void)
  ******************************************************************************/
 int writeSysParamsToStorage(void) 
 {
-  int returnCode;
+  int returnCode, paramType;
   bool isTimerEnabled;
   
   // write current system parameter values...
-  EEPROM.put(0, aggKp);
-  EEPROM.put(10, aggTn);
-  EEPROM.put(20, aggTv);  
-  EEPROM.put(30, BrewSetPoint);
-  EEPROM.put(40, brewtime);
-  EEPROM.put(50, preinfusion);
-  EEPROM.put(60, preinfusionpause);
-  EEPROM.put(90, aggbKp);
-  EEPROM.put(100, aggbTn);
-  EEPROM.put(110, aggbTv);
-  EEPROM.put(120, brewtimersoftware);
-  EEPROM.put(130, brewboarder);
-  EEPROM.put(140, startKp);
-  EEPROM.put(150, startTn);
-  EEPROM.put(160, SteamSetPoint);
+  for (paramType=0; paramType<SYS_PARAM__LAST_ENUM; paramType++)
+  {
+    if (sysParamInfo[paramType].storageAddr >= 0)                               // parameter stored?
+    {                                                                           // yes...
+      debugStream.writeI("%s(): write value %.2f for type %i at addr %i",
+                         __FUNCTION__, sysParam[paramType], paramType,
+                         sysParamInfo[paramType].storageAddr);
+      EEPROM.put(sysParamInfo[paramType].storageAddr, sysParam[paramType]);     // write to storage
+    }
+  }
 
   // While Flash memory erase/write operations no other code must be executed!
   // disable any ISRs...
