@@ -19,10 +19,13 @@
 
 // List of supported machines
 enum MACHINE {
+    // USED AS INDEX!
     RancilioSilvia,   // MACHINEID 0
     RancilioSilviaE,  // MACHINEID 1
     Gaggia,           // MACHINEID 2
     QuickMill         // MACHINEID 3
+
+    // WHEN ADDING NEW MACHINE UPDATE machineName[] AS WELL!!!
 };
 
 /**
@@ -80,6 +83,20 @@ enum MACHINE {
 #define SCALE_SAMPLES 2                     // Load cell sample rate
 #define SCALE_CALIBRATION_FACTOR 3195.83    // Raw data is divided by this value to convert to readable data
 
+// Display Menu
+#define DISPLAY_MENU 0                                  // 0 = no display buttons, 1 = two display buttons
+#define DISPLAY_MENU_ON ((DISPLAY_MENU != 0) && (ETRIGGER == 0) && (BREWDETECTION <= 2))
+#define DISPLAY_BTN_LEFT_PIN_NO 15                      // input pin for left display button (CONFLICT WITH BREWDETECTION = 3)
+#define DISPLAY_BTN_LEFT_PIN_MODE INPUT                 // external pulldown resistor
+#define DISPLAY_BTN_LEFT_PIN_ACTIVE_LEVEL HIGH
+#define DISPLAY_BTN_RIGHT_PIN_NO 16                     // input pin for right display button (CONFLICT WITH ETRIGGER == 1)
+#define DISPLAY_BTN_RIGHT_PIN_MODE INPUT_PULLDOWN_16    // NodeMCU pin 16 only supports pull-down
+#define DISPLAY_BTN_RIGHT_PIN_ACTIVE_LEVEL HIGH
+#if (DISPLAY_MENU != 0)
+#define DISPLAY_BTN_TEST_MODE 0    // 1 = disable PID
+#else
+#define DISPLAY_BTN_TEST_MODE 0
+#endif
 
 /* Pressure sensor
  *

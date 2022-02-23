@@ -1,0 +1,15 @@
+#ifndef _DISPLAY_MENU_H_
+#define _DISPLAY_MENU_H_
+
+#include <stdint.h>
+
+
+
+// FUNCTIONS
+
+bool displaymenuIsEnableEvent(void);
+void displaymenuLoop(void);
+void displaymenuSetup(void);
+
+
+#endif // _DISPLAY_MENU_H_

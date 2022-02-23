@@ -16,6 +16,7 @@
 // Includes
 #include <ArduinoOTA.h>
 #include "rancilio-pid.h"
+#include "DisplayMenu.h"
 #include "Storage.h"
 #include "SysPara.h"
 #include "icon.h"        // user icons for display
@@ -62,6 +63,12 @@ MACHINE machine = (enum MACHINE)MACHINEID;
 PeriodicTrigger writeDebugTrigger(5000);  // returns true every 5000 ms
 PeriodicTrigger logbrew(500);
 
+static const char *machineName[] = {
+    "Rancilio Silvia",
+    "Rancilio Silvia E",
+    "Gaggia",
+    "QuickMill",
+};
 
 enum MachineState {
     kInit = 0,
@@ -343,6 +350,7 @@ SysPara<double> sysParaPidTvReg(&aggTv, 0, 999, STO_ITEM_PID_TV_REGULAR);
 SysPara<double> sysParaPidKpBd(&aggbKp, 0, 200, STO_ITEM_PID_KP_BD);
 SysPara<double> sysParaPidTnBd(&aggbTn, 0, 999, STO_ITEM_PID_TN_BD);
 SysPara<double> sysParaPidTvBd(&aggbTv, 0, 999, STO_ITEM_PID_TV_BD);
+SysPara<double> sysParaSteamSetPoint(&SteamSetPoint, 100, 125);
 SysPara<double> sysParaBrewSetPoint(&BrewSetPoint, 20, 105, STO_ITEM_BREW_SETPOINT);
 SysPara<double> sysParaBrewTime(&brewtime, 0, 60, STO_ITEM_BREW_TIME);
 SysPara<double> sysParaBrewSwTimer(&brewtimersoftware, 0, 999, STO_ITEM_BREW_SW_TIMER);
@@ -484,6 +492,9 @@ const unsigned long intervalDisplay = 500;
         #include "Displaytemplateupright.h"
     #endif
 #endif
+
+// Display Menu
+static bool isDisplayMenuActive = false;
 
 /**
  * @brief Create software WiFi AP
@@ -2092,6 +2103,9 @@ void setup() {
 
         enableTimer1();
 
+        #if DISPLAY_MENU_ON
+        displaymenuSetup();
+        #endif
     }  // else softenable == 1
 }
 
@@ -2100,6 +2114,9 @@ void loop() {
         loopcalibrate();
     } else if (softApEnabled == 0) {
         looppid();
+        #if DISPLAY_MENU_ON
+        isDisplayMenuActive = displaymenuIsEnableEvent();
+        #endif
     } else if (softApEnabled == 1) {
         switch (softApstate) {
             case 0:
@@ -2279,17 +2296,24 @@ void looppid() {
 
     // Check if PID should run or not. If not, set to manuel and force output to zero
     #if OLED_DISPLAY != 0
-    unsigned long currentMillisDisplay = millis();
-    if (currentMillisDisplay - previousMillisDisplay >= 100) {
-        displayShottimer();
+    if (!isDisplayMenuActive) {
+        unsigned long currentMillisDisplay = millis();
+        if (currentMillisDisplay - previousMillisDisplay >= 100) {
+            displayShottimer();
+        }
+        if (currentMillisDisplay - previousMillisDisplay >= intervalDisplay) {
+            previousMillisDisplay = currentMillisDisplay;
+        #if DISPLAYTEMPLATE < 20  // not in vertikal template
+            Displaymachinestate();
+        #endif
+            printScreen();  // refresh display
+        }
     }
-    if (currentMillisDisplay - previousMillisDisplay >= intervalDisplay) {
-        previousMillisDisplay = currentMillisDisplay;
-    #if DISPLAYTEMPLATE < 20  // not in vertikal template
-        Displaymachinestate();
+    #if DISPLAY_MENU_ON
+    else {
+        displaymenuLoop();
+    }
     #endif
-        printScreen();  // refresh display
-    }
     #endif
 
     if (machinestate == kPidOffline || machinestate == kSensorError || machinestate == kEmergencyStop || machinestate == keepromError) {
@@ -2580,6 +2604,20 @@ const char* getFwVersion(void)
     return sysVersion.c_str();
 }
 
+
+/**
+ * @brief Returns the machine name.
+ *
+ * @param id - machine ID (optional, default=user config setting)
+ *
+ * @return machine name string
+ */
+const char *getMachineName(enum MACHINE id)
+{
+  if (id >= sizeof(machineName)/sizeof(machineName[0])) // invalid machine ID?
+    return (const char*)"?";                            // yes ->
+  return machineName[id];
+}
 
 
 /**
