@@ -92,11 +92,6 @@ enum MACHINE {
 #define DISPLAY_BTN_RIGHT_PIN_NO 16                     // input pin for right display button (CONFLICT WITH ETRIGGER == 1)
 #define DISPLAY_BTN_RIGHT_PIN_MODE INPUT_PULLDOWN_16    // NodeMCU pin 16 only supports pull-down
 #define DISPLAY_BTN_RIGHT_PIN_ACTIVE_LEVEL HIGH
-#if (DISPLAY_MENU != 0)
-#define DISPLAY_BTN_TEST_MODE 0    // 1 = disable PID
-#else
-#define DISPLAY_BTN_TEST_MODE 0
-#endif
 
 /* Pressure sensor
  *
