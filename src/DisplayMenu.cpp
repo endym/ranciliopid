@@ -809,6 +809,7 @@ void displaymenuLoop(void)
 bool displaymenuIsEnableEvent(void)
 {
     static bool buttonPressed = false;
+    static bool menuExitPending = false;
 
     if (!isMenuEnabled)               // menu disabled?
     {                                 // yes, check for button click...
@@ -827,11 +828,23 @@ bool displaymenuIsEnableEvent(void)
         else
             buttonPressed = false;
     }
-    else if (isMenuExitEvent && areAllButtonsReleased()) // menu is enabled, menu exit event and all buttons released?
-    {                                                    // yes, disable menu...
-        Serial.printf("%s(): disable menu", __FUNCTION__);
-        isMenuExitEvent = false;
-        isMenuEnabled = false;
+    else if (isMenuExitEvent)       // menu is enabled, menu exit event?
+    {                               // yes...
+        if (!menuExitPending)       // 1st exit event?
+        {                           // yes, give user response to release button...
+            menuExitPending = true;
+            u8g2.clearBuffer();
+            u8g2.setCursor(0, 0);
+            u8g2.print("Release button!");
+            u8g2.sendBuffer();
+        }
+        if (areAllButtonsReleased())    // menu is enabled, menu exit event and all buttons released?
+        {                               // yes, disable menu...
+            Serial.printf("%s(): disable menu", __FUNCTION__);
+            isMenuExitEvent = false;
+            isMenuEnabled = false;
+            menuExitPending = false;
+        }
     }
 
     return isMenuEnabled;
