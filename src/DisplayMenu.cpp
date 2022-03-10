@@ -56,8 +56,8 @@ template <typename T>
 struct menu_dyn_para
 {
     bool isEditMode;
-    SysPara<T> sysParaEdit;
     SysPara<T> sysPara;
+    T editValue;
     T dispValue;
 };
 
@@ -437,7 +437,6 @@ template <typename T>
 static void handleDynPara(uint8_t line, menu_dyn_para<T> &dynMenuPara, T stepSize)
 {
     uint8_t curLine = LCDML.MENU_getCursorPos();
-    T editValue;
 
     //   Serial.printf("%s(): param %i at line %u", __FUNCTION__, paramType, line);
     // read current parameter value...
@@ -461,38 +460,36 @@ static void handleDynPara(uint8_t line, menu_dyn_para<T> &dynMenuPara, T stepSiz
                     // BT_checkUp and BT_checkDown in this function.
                     // This function can only be called in a menu, not in a menu function.
                     LCDML.MENU_disScroll();
-                    dynMenuPara.sysParaEdit = dynMenuPara.sysPara; // make "edit mode" copy of system parameter
+                    dynMenuPara.editValue = dynMenuPara.sysPara.get();  // make "edit mode" copy of system parameter value
                     dynMenuPara.isEditMode = true;
                 }
                 else
-                {                                                           // no, leave edit mode...
-                    LCDML.MENU_enScroll();                                  // re-enable the normal menu scroll function
-                    dynMenuPara.sysPara.set(dynMenuPara.sysParaEdit.get()); // set edit value as new current value
-                    dynMenuPara.dispValue = dynMenuPara.sysParaEdit.get();  // set display value with edited value
+                {                                                       // no, leave edit mode...
+                    LCDML.MENU_enScroll();                              // re-enable the normal menu scroll function
+                    dynMenuPara.sysPara.set(dynMenuPara.editValue);     // set edit value as new current value
+                    dynMenuPara.dispValue = dynMenuPara.editValue;      // set display value with edited value
                     dynMenuPara.isEditMode = false;
                 }
             }
 
             // Following button check have only an effect when menu scrolling is disabled
-            if (LCDML.BT_checkUp())                                                 // left button?
-            {                                                                       // yes, decrease value...
-                editValue = dynMenuPara.sysParaEdit.get();
-                if (editValue > dynMenuPara.sysParaEdit.getMin())                   // min. value not reached?
-                    dynMenuPara.sysParaEdit.set(editValue - stepSize);              // yes -> decrease value
+            if (LCDML.BT_checkUp())                                             // left button?
+            {                                                                   // yes, decrease value...
+                if (dynMenuPara.editValue > dynMenuPara.sysPara.getMin())       // min. value not reached?
+                    dynMenuPara.editValue -= stepSize;                          // yes -> decrease value
                 else
-                    dynMenuPara.sysParaEdit.set(dynMenuPara.sysParaEdit.getMax());  // no -> jump to max. value
-                dynMenuPara.dispValue = dynMenuPara.sysParaEdit.get();              // update display value
+                    dynMenuPara.editValue = dynMenuPara.sysPara.getMax();       // no -> jump to max. value
+                dynMenuPara.dispValue = dynMenuPara.editValue;                  // update display value
             }
 
             // Following button check have only an effect when menu scrolling is disabled
-            if (LCDML.BT_checkDown())                                               // right button?
-            {                                                                       // yes, increase value...
-                editValue = dynMenuPara.sysParaEdit.get();
-                if (editValue < dynMenuPara.sysParaEdit.getMax())                   // max. value not reached?
-                    dynMenuPara.sysParaEdit.set(editValue + stepSize);              // yes -> increase value
+            if (LCDML.BT_checkDown())                                           // right button?
+            {                                                                   // yes, increase value...
+                if (dynMenuPara.editValue < dynMenuPara.sysPara.getMax())       // max. value not reached?
+                    dynMenuPara.editValue += stepSize;                          // yes -> increase value
                 else
-                    dynMenuPara.sysParaEdit.set(dynMenuPara.sysParaEdit.getMin());  // no -> jump to min. value
-                dynMenuPara.dispValue = dynMenuPara.sysParaEdit.get();              // update display value
+                    dynMenuPara.editValue = dynMenuPara.sysPara.getMin();       // no -> jump to min. value
+                dynMenuPara.dispValue = dynMenuPara.editValue;                  // update display value
             }
         }
     }
