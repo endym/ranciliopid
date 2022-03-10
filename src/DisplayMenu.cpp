@@ -359,15 +359,23 @@ static void cbMenuInformation(uint8_t param)
         // display information...
         u8g2.setFont(u8g2_font_profont11_tf);
         u8g2.clearBuffer();
-        u8g2.setCursor(ALIGN_CENTER(getMachineName()), DISPLAY_FONT_HEIGHT * 0); // line 1
-        u8g2.println(getMachineName());
-        u8g2.setCursor(ALIGN_CENTER(getFwVersion()), DISPLAY_FONT_HEIGHT * 1); // line 2
-        u8g2.println(getFwVersion());
+        // line 1: machine name
+        u8g2.setCursor(0, DISPLAY_FONT_HEIGHT * 0);
+        u8g2.print(getMachineName());
+        // line 2: firmware version
+        u8g2.setCursor(5, DISPLAY_FONT_HEIGHT * 1);
+        u8g2.print("FW: " + String(getFwVersion()));
+        // line 3: local IP address
+        u8g2.setCursor(5, DISPLAY_FONT_HEIGHT * 2);
+        #if (CONNECTMODE != 0)
+        u8g2.print("IP: " + String(getLocalIp()));
+        #else
+        u8g2.print("IP: offline");
+        #endif
         #if 0
-        u8g2.setCursor(0, DISPLAY_FONT_HEIGHT * 2); // line 3
-        u8g2.println();
-        u8g2.setCursor(0, DISPLAY_FONT_HEIGHT * 3); // line 4
-        u8g2.println();
+        // line 4:
+        u8g2.setCursor(5, DISPLAY_FONT_HEIGHT * 3);
+        u8g2.print();
         #endif
         u8g2.sendBuffer();
         u8g2.setFont(DISPLAY_FONT);

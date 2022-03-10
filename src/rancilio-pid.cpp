@@ -2634,3 +2634,13 @@ int factoryReset(void) {
     return readSysParamsFromStorage();
 }
 
+
+/**
+ * @brief Returns the local IP address.
+ *
+ * @return local IP address as string
+ */
+String getLocalIp(void) {
+    return WiFi.localIP().toString();
+}
+

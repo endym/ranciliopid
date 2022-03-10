@@ -30,6 +30,7 @@ extern SysPara<uint8_t> sysParaPidOn;
 // Functions
 int factoryReset(void);
 const char* getFwVersion(void);
+String getLocalIp(void);
 const char* getMachineName(enum MACHINE id=(enum MACHINE)MACHINEID);
 int readSysParamsFromStorage(void);
 int writeSysParamsToStorage(void);
